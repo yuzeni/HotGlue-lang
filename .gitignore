@@ -1,0 +1,9 @@
+# Directories
+env/
+build/
+emacs/
+
+# Emacs
+\#*\#
+*~
+.\#*

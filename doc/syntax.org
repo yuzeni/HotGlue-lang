@@ -1,0 +1,79 @@
+* Types and type modifiers
+| *symbol* | *description*                                                                       |
+|----------+-------------------------------------------------------------------------------------|
+| ident    | Any identifier. If it is already taken, it will act like a reference to that object |
+| this     | The last super that is also an ident.                                               |
+
+
+
+* Ops
+** Type definition
+| *symbol*              | *description*                                                                                                                                                                                  |
+|-----------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| a : {b}               | new type ~a~ is at most ~b~. Where ~{b}~ is a set of named types.                                                                                                                              |
+| $\vert{}$ a           | ~a~ is a constant that can't be changed after compilation                                                                                                                                      |
+| x:> {a} -> {b} :: {c} | ~x~ is a function, consuming ~a~ and evaluating to ~b~, through the intermediate ~c~, which may transform ~a~ or create new objects. ~req()~ after ~a~ will evaluate before ~c~, whereas ~req()~ after ~b~ will evaluate after ~c~. |
+| extern a              | The content of ~a~ is not read- or writable from HotGlue                                                                                                                                       |
+| exr a                 | ~a~ is like any other object, but it might be read externally                                                                                                                                  |
+| exw a                 | ~a~ is like any other object, but is might be written to externally                                                                                                                            |
+| exlayout modifier b   | ~modifier~ is either ~SoA~ or ~AoS~. Determines external memory layout of ~b~                                                                                                                  |
+| using a op            | For the current expression or scope, every identifier will be pre- or postfixed like ~a op ident~, ~ident op a~, ~ident op~ or ~op ident~. Depending on the operator.                          |
+
+** Set operators
+
+** Controll-flow ops
+| *symbol*       | *description*                                                                                                                                                               |
+|----------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| a req (bool b) | for ~a~ to happen, ~b~ must be true.                                                                                                                                        |
+| a -> {b}       | ~a~ must be passed to b                                                                                                                                                     |
+| a !-> {b}      | ~a~ can never be passed to ~b~                                                                                                                                              |
+| a <- {b}       | ~a~ must be made by ~b~                                                                                                                                                     |
+| a !<- {b}      | ~a~ can never be made by ~b~                                                                                                                                                |
+| expa(a, b)     | ~a~ is an overdefined object. For every definition of ~a~, ~b~ will be repeated. ~a~ can be used in ~b~. There will be no repetitions of ~b~ If ~a~ is under- or undefined. |
+| a trigger b    | If ~a~ is a procedure, it will be executed, when ~b~ SWITCHES to true                                                                                                       |
+
+** Set creation ops
+| *symbol*            | *description*                                                                                                                                                                      |
+|---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| all a               | all objects of type ~a~. But excluding ~a~ itself, if it is a type. Usually followed by a ~req()~ on ~_..~. If ~a~ is not specified, then all existing objects will be considered. |
+| a from {b}          | all of ~a~ in the set ~b~.                                                                                                                                                         |
+| {a} where b         | all of ~a~ which satisfy the boolean experssion ~b~.                                                                                                                               |
+| KINDA USELESS not k | negates the affect of a negatable keyword ~k~. Includes ~from, first, last, all~.                                                                                                  |
+| a[b]                | accessing the member of ~a~ at position ~b~ on the first level                                                                                                                     |
+| a({b,})             | instantiate an object ~a~ from ~b~, where the arguments are passed as values seperated by ~,~ not as type definitions                                                              |
+| a.b                 | get type ~b~ from going down ~a~ only within the first level                                                                                                                       |
+| a.all               | get all Types that exist down from ~a~                                                                                                                                             |
+| a\b                 | get type ~b~ from going up ~a~ only within the first level                                                                                                                         |
+| a\all               | get all Types within the current object that exist up from ~a~                                                                                                                     |
+| a\this              | get the type from going up ~a~ which ~a~ belongs to                                                                                                                                |
+| a req b             | for the next narrowing of ~a~ to be valid, ~b~ must be true, it will sort through sets and pick fitting solutions. Bsp. ~all req(_ > 10) a..~ where ~a~ is a set of numbers        |
+| first a             | The object that has the least to do with any other object in the set.                                                                                                              |
+| last a              | The object which has all other objects in the set, inside its history. For example the final frame of a frame composition. (It may not exist)                                      |
+
+** Math ops
+| *symbol*               | *numbers*                                    | *types*                                    |
+|------------------------+----------------------------------------------+--------------------------------------------|
+| a + b                  | add ~a~ to ~b~                               |                                            |
+| a - b                  | sub ~a~ from ~b~                             |                                            |
+| a / b                  | div ~a~ by ~b~                               |                                            |
+| a % b                  | ~a~ modulo ~b~                               |                                            |
+| a * b                  | mul ~a~ with ~b~                             |                                            |
+| a ** b                 | ~a~ to the power of ~b~                      |                                            |
+| a = b                  | update ~a~ with ~b~                          |                                            |
+| a += b                 |                                              |                                            |
+| a -= b                 |                                              |                                            |
+| a *= b                 |                                              |                                            |
+| a /= b                 |                                              |                                            |
+| a **= b                |                                              |                                            |
+| a %= b                 |                                              |                                            |
+| a++                    | only for ints, not allowed within expression |                                            |
+| a--                    | only for ints, not allowed within expression |                                            |
+| {a} && {b}             | ~a~ and ~b~                                  | intersection of sets ~a~ and ~b~           |
+| {a} $\vert{}\vert$ {b} | ~a~ or ~b~                                   | sum of sets ~a~ and ~b~                    |
+| {a} == {b}             | ~a~ is equal to ~b~                          | are types equal?                           |
+| {a} != {b}             | ~a~ is not equal to ~b~                      | are types not equal?                       |
+| !a                     | boolean negation of ~a~                      |                                            |
+| {a} < {b}              | ~a~ less than ~b~                            | is ~b~ contained in, and smaller than ~a~? |
+| {a} > {b}              | ~a~ greater than ~b~                         | is ~a~ contained in, and smaller than ~b~? |
+| {a} <= {b}             | ~a~ less equal ~b~                           | is ~b~ contained in ~a~?                   |
+| {a} >= {b}             | ~a~ greater equal ~b~                        | is ~a~ contained in ~b~?                   |

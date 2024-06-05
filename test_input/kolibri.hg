@@ -1,0 +1,180 @@
+
+// all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file2
+
+Integer: {s8, s16, s32, s64, u8, u16, u32, u64}
+Numeric: {s8, s16, s32, s64, u8, u16, u32, u64, f8, f16, f32, f64}
+Real: {f8, f16, f32, f64}
+
+exmth: {
+    Compute_platforms: ident: { C, Cpluplus, OpenCL, CUDA }
+    method_name: str
+}
+
+exobj: {
+    id: u64
+    id_interact_list: u64[]
+    Time
+    delta_t: u32
+    attribs
+}
+
+Time: u64 // in nanoseconds
+Second: u64: 10**9
+
+in_range:> {
+    x, a, b
+} -> {
+    bool: x >= a && x <= b
+}
+
+Image: u32[width, height]
+
+Frame:> {
+    width: u32, height: u32, Time
+} -> {
+    extern image: Image
+    extern depth_buffer: u32[width, height]
+    Time
+}
+
+Mesh:> {
+    n_attribs: u32
+} -> {
+    vertices: f32[ , n_attribs]
+    indices: u32[ , 3]
+}
+
+// a valid instance of lbm_fluid will exist, when everything is fully defined
+lbm_fluid: exobj:
+{
+
+    // it is okay to "overdefine" things
+    DOM_BDRYS: u8: {
+        OPEN: 0
+	BOUNCE_BACK: 1
+	FIXED_VELO: 2
+    }
+    
+    COLLISION_OPERATOR: u8: { SRT:0 MRT:1 CM_MRT:2 }
+    
+    attribs: {
+    
+        | si_origin: f32[3]
+        | si_size: f32[3] req this >= 0 // for all 3 in the set this
+        | lbm_size: u32[3]
+        | si_max_velo: f32 req in_range(this, 0, 60)
+        | lbm_max_velo: f32 req in_range(this, 1.5, 2.2)
+        | si_kinematic_visc: Unit(f32, "sqr_m_per_s")
+        | domain_init: u8: 1
+        | collision_operator: COLLISION_OPERATOR
+        | lattice_store_n_buffers: u8: {1,2}
+        | lbm_descrete_velos: u32
+        | domain_bdry_mx: DOM_BDRYS
+        | domain_bdry_my: DOM_BDRYS
+        | domain_bdry_mz: DOM_BDRYS
+        | domain_bdry_px: DOM_BDRYS
+        | domain_bdry_py: DOM_BDRYS
+        | domain_bdry_pz: DOM_BDRYS
+        | lattice_storage: {f16, f32}
+        | lattice_intersec_storage: {f16, f32}
+        | path_to_some_external_data: str
+	
+        exr r_opacity: f32 req in_range(this, 0, 1)
+        exr r_opacity_fade: f32 req in_range(this, 0, 1)
+        exr r_ray_step_size: f32 req in_range(this, 0, 1)
+        exr r_rgb_color_scheme: i32[]
+
+        extern DDF: lattice_storage[lbm_size * lattice_store_n_buffers, lbm_descrete_velos]
+        extern CCQ: { lattice_intersec_storage[CC_count * lbm_descrete_velos], Time }
+        exw CC_count: { u64, Time }
+        extern CFlags: u8[lbm_size, lbm_descrete_velos]
+        timestep: u64: 0 // external functions actually dont't need to know the timestep
+    }
+}
+
+o69: lbm_fluid: {
+
+    id: 69
+    id_interact_list: {234, 34564, 123}
+    attribs: {
+        si_origin: {0,0,0}
+        si_size: {12,554,22}
+        lbm_size: {6,277,11}
+        si_max_velo: 43.23
+        lbm_max_velo: 2.0
+        si_kinematic_visc: 0.1
+        collision_operator: 3
+        lattice_store_n_buffers: 1
+        domain_bdry_mx: 1
+        domain_bdry_my: 2
+        domain_bdry_mz: 2
+        domain_bdry_px: 1
+        domain_bdry_py: 2
+        domain_bdry_pz: 2
+        lattice_storage: f32
+        lattice_intersec_storage: f16
+        path_to_some_external_data: "/my/data/is/here.lul"
+
+        render_opacity: 0.23
+        render_opacity_fade: .9
+        render_ray_step_size: 1.1
+        render_rgb_color_scheme: {0x0000ffff, 0xffffffff, 0xff0000ff}
+    }
+}
+
+advance_lbm_fluid: {fluid: lbm_fluid req all Time from this.attribs == fluid.Time }  -> {fluid} :: {
+    exmth(CUDA, "t_step_lbm_fluid") // like with Time there can only be one for advance_lbm_fluid
+    fluid.Time += fluid.delta_t
+}
+
+get_cc_count:> {
+    fluid: lbm_fluid
+    meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time
+} req(len(meshes) > 0) -> {
+    fluid, meshes
+} :: {
+    fluid.attribs.CC_count: 0
+    mesh:Mesh:meshes expa {fluid, mesh} -> {exmth(CUDA, "get_cc_count")}
+    
+    fluid.attribs.CC_count.time: fluid.Time
+}
+
+calc_ccq_intersec:> {
+    fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Time
+    meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time
+} -> {
+    fluid, meshes
+} :: {
+    mesh:Mesh:meshes expa
+        {fluid, mesh} -> {
+            fluid.attribs.CC_count: 0
+            exmth(CUDA, "calc_ccq_intersections")
+        }
+    fluid.attribs.CCQ.time: fluid.Time
+}
+
+Renderer:> {} -> { framebuffer }
+
+rasterizer:> Renderer:> {
+    frame_buffer: Frame
+    mesh: Mesh req this\Time == frame_buffer.Time // \ asks for the occurence of Time in the object that mesh came from
+} -> {
+    frame_buffer
+} :: {
+    exmth(CUDA, "mesh_rasterizer")
+}
+
+fluid_Renderer:> {
+    frame_buffer: Frame
+    DDF: lbm_fluid.DDF req this\Time == frame_buffer.Time
+} -> {
+    frame_buffer !-> rasterizer
+} :: {
+    exmth(CUDA, "lbm_fluid_renderer")
+}
+
+Unit: {value: Numeric, unit: str}
+
+save_image:> {str dest_path, extern Image} :: { exmth(C, "write_image_png") }
+
+do save_image("frame/path.png", last Frame(Time: 10*Second) from all Renderer)

@@ -1,0 +1,94 @@
+
+Image: u32[][]
+Depth_buffer: u32[][]
+Time: u64
+
+Mesh_content: {HAS_POS:bool, HAS_NORMAL:bool, HAS_COLOR:bool, HAS_UV:bool}
+
+Mesh:> {Mesh_content, n_verts: u32, n_ind: u32}
+-> extern {
+    data: f32[n_verts][3 * (using Mesh_content._ HAS_POS + HAS_NORMAL + HAS_COLOR + HAS_UV)]
+    ind: u32[n_ind][3]
+    trans_mat: f32[4][4]
+}
+
+Joint_type: ident: { BALL, LINEAR, HINGE, FIXED }
+
+Joint: {
+    | Joint_type
+    | part_a: ident from Part
+    | part_a_jpos: f32[3]
+    | part_b: ident from Part
+    | part_b_jpos: f32[3]
+    | joint_normal: f32[3] req Joint_type == LINEAR || Joint_type == HINGE
+    joint_force: f32[3]
+}
+
+Material: {
+    density: f32
+    E_module: f32
+    poisson_number: f32
+}
+
+Part: {
+    Mesh // doesnt need | beacuse it is extern and therefore not in control of hg
+    | Material
+    physic_update: Time: 0
+    Time
+}
+:: {
+    Time += physic_update
+    physic_update = 0
+} trigger physic_update > 0
+
+Mechanical_part:> { n_joints: u32 }
+-> {
+    Joints: Joint[n_joints]
+    Part
+}
+
+Robot: {
+    | mech_parts: Mechanical_part[]
+    | parts: Part[]
+    Time: 0 req Time from this\first.all == this
+    update_frequency: Time
+}
+:: {Update_robot(this)} trigger !(Time % update_frequency)
+:: {Time = Time from this\first.all} trigger all this\first.all == Time:t // very declarative, very complicated. Requires equation solving
+
+Update_robot:> {robot: Robot} -> {robot} :: {exmth(C, "update_robot")}
+
+Render_buffer: {
+    Image
+    Depth_buffer
+    Time
+}
+
+Rasterizer:> {
+    Mesh
+    Render_buffer
+} req Render_buffer.Time == Time from Mesh\first.all
+-> {
+    Render_buffer <- Mesh\first
+}
+:: {
+    exmth(CUDA, "rasterize_triangles")
+}
+
+Constraint: {
+    // some general physics constraint stuff
+}
+
+Joint_to_Constraint:> {Joint} -> {constraint} :: {constraint: Constraint /*some conversion procedure*/}
+
+Physics:> {
+    exlayout SoA meshes: all Part.Mesh
+    constraints: Constraint[]: Joint_to_Constraint(all Mechanical_part.joints.Joint)
+    future_time: Time
+    | dt: f32: 0.1 * Seconds
+} req all Time from meshes.Mesh == future_time - dt
+-> { meshes }
+:: {
+    exmth(CUDA, "calc_physics")
+    meshes\physics_update += dt
+}

@@ -1,0 +1,4 @@
+-std=c++20
+-Wall
+-Wextra
+-IC:/src/Tracy-0.10/tracy-0.10/public
