@@ -56,7 +56,7 @@ Robot: {
 :: {Update_robot(this)} trigger !(Time % update_frequency)
 :: {Time = Time from this\first.all} trigger all this\first.all == Time:t // very declarative, very complicated. Requires equation solving
 
-Update_robot:> {robot: Robot} -> {robot} :: {exmth(C, "update_robot")}
+Update_robot:> {robot: Robot} -> {robot} :: {exmth(C, "update_robot", robot)}
 
 Render_buffer: {
     Image
@@ -89,6 +89,6 @@ Physics:> {
 } req all Time from meshes.Mesh == future_time - dt
 -> { meshes }
 :: {
-    exmth(CUDA, "calc_physics")
+    exmth(CUDA, "calc_physics", meshes, constraints)
     meshes\physics_update += dt
 }

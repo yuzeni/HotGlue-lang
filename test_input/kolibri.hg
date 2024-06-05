@@ -175,6 +175,6 @@ fluid_Renderer:> {
 
 Unit: {value: Numeric, unit: str}
 
-save_image:> {str dest_path, extern Image} :: { exmth(C, "write_image_png") }
+save_image:> {str dest_path, extern Image} :: { exmth(C, "write_image_png", dest_path, Image) }
 
-do save_image("frame/path.png", last Frame(Time: 10*Second) from all Renderer)
+do save_image("frame/path.png", last Frame(Time: 10 * Second) from all Renderer)
