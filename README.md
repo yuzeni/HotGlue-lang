@@ -1,13 +1,17 @@
 # HotGlue-lang
-A language for simply gluing things together, because duct tape and screws are overrated.\
+
+A language for simply gluing things together, because duct tape and screws are overrated.
 <hr>
+
 ## The intention
+
 Often, implementing functionality is much easier in an isolated context, compared to within a large application.
 And it does makes sense, since everything has to, not just work, but work *together* in harmony and effieciently.
 However this is not fun because it restraints bigger projects. With HotGlue-lang I want to test how much
-of the implementation of the interplay can be hidden behind a declarative descprition of the desired behaviour.\
+of the implementation of the interplay can be hidden behind a declarative descprition of the desired behaviour.
 
 ## The idea
+
 HotGlue assumes that every functionality you want to include might require some *ingredients* and might produce some
 *products*, which themselves could be ingredients for other functions. In that sense it is just a functional model.
 These two *ingredients* and *products* represent all of the information about the functionality that is available to HotGlue,
@@ -26,13 +30,14 @@ there, while juggling all the requirements and sideeffects. This is how HotGlue 
 In this basic example, a frame with the attribute Time set to 10 Seconds, which must be produced by the `last` Renderer,
 which is the last Renderer object in the execution tree (if a single one exists), is saved to disk. Where `save_image` is
 just a wrapper for a C function. `last from all` avoids ambiguities if there are multiple renderers for different objects,
-which feed into each other.\
+which feed into each other.
 ```c
 do save_image("frame/path.png", last Frame(Time: 10 * Second) from all Renderer)
 ```
 This description of the final state will in a sense *collaps* the description of the behaviour (the HotGlue program)
-into an executable thing.\
+into an executable thing.
 
 ## Building on Windows
+
 Run the `build.bat` script from the Microsoft Visual Studio _"x64 Native Tools Command Prompt"_ or from any command prompt with the vcvars64.bat environment.\
 Alternatively, a prebuilt windows executable is already located in the build directory.
