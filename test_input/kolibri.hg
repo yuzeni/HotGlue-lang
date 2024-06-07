@@ -21,32 +21,25 @@ exobj: {
 Time: u64 // in nanoseconds
 Second: u64: 10**9
 
-in_range:> {
-    x, a, b
-} -> {
-    bool: x >= a && x <= b
-}
+in_range: (x, a, b) -> { bool: x >= a && x <= b }
 
 Image: u32[width, height]
 
-Frame:> {
-    width: u32, height: u32, Time
-} -> {
+Frame: (width: u32, height: u32, Time)
+-> {
     extern image: Image
     extern depth_buffer: u32[width, height]
     Time
 }
 
-Mesh:> {
-    n_attribs: u32
-} -> {
+Mesh: (n_attribs: u32)
+-> {
     vertices: f32[ , n_attribs]
     indices: u32[ , 3]
 }
 
 // a valid instance of lbm_fluid will exist, when everything is fully defined
-lbm_fluid: exobj:
-{
+lbm_fluid: exobj: {
 
     // it is okay to "overdefine" things
     DOM_BDRYS: u8: {
@@ -122,59 +115,53 @@ o69: lbm_fluid: {
     }
 }
 
-advance_lbm_fluid: {fluid: lbm_fluid req all Time from this.attribs == fluid.Time }  -> {fluid} :: {
+advance_lbm_fluid: (fluid: lbm_fluid req Time from this.attribs == fluid.Time)
+{
     exmth(CUDA, "t_step_lbm_fluid") // like with Time there can only be one for advance_lbm_fluid
     fluid.Time += fluid.delta_t
-}
+} -> {fluid}
 
-get_cc_count:> {
-    fluid: lbm_fluid
-    meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time
-} req(len(meshes) > 0) -> {
-    fluid, meshes
-} :: {
+get_cc_count: (fluid: lbm_fluid)
+{
+    meshes: Mesh[]: Mesh from all where first id from this.\all <= fluid.id_interac_list && first Time from Mesh\all == fluid.Time)
     fluid.attribs.CC_count: 0
-    mesh:Mesh:meshes expa {fluid, mesh} -> {exmth(CUDA, "get_cc_count")}
+    
+    expa (mesh: Mesh: meshes) {
+        exmth(CUDA, "get_cc_count", fluid, mesh)
+    }
     
     fluid.attribs.CC_count.time: fluid.Time
-}
+} -> {fluid, meshes}
 
-calc_ccq_intersec:> {
-    fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Time
-    meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time
-} -> {
-    fluid, meshes
-} :: {
-    mesh:Mesh:meshes expa
-        {fluid, mesh} -> {
-            fluid.attribs.CC_count: 0
-            exmth(CUDA, "calc_ccq_intersections")
-        }
-    fluid.attribs.CCQ.time: fluid.Time
-}
+calc_ccq_intersec: (fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Time
+                    meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time)
+{
+    expa (mesh: Mesh: meshes) {
+        fluid.attribs.CC_count = 0
+        exmth(CUDA, "calc_ccq_intersections", mesh, fluid.attribs.CC_count)
+    }
+    
+    fluid.attribs.CCQ.time = fluid.Time
+} -> {fluid, meshes}
 
-Renderer:> {} -> { framebuffer }
+Renderer: () -> { framebuffer }
 
-rasterizer:> Renderer:> {
-    frame_buffer: Frame
-    mesh: Mesh req this\Time == frame_buffer.Time // \ asks for the occurence of Time in the object that mesh came from
-} -> {
-    frame_buffer
-} :: {
-    exmth(CUDA, "mesh_rasterizer")
-}
+rasterizer: Renderer: (frame_buffer: Frame
+                       mesh: Mesh req this\Time == frame_buffer.Time) // \ asks for the occurence of Time in the object that mesh came from
+{
+    exmth(CUDA, "mesh_rasterizer", frame_buffer, mesh)
+} -> {frame_buffer}
 
-fluid_Renderer:> {
-    frame_buffer: Frame
-    DDF: lbm_fluid.DDF req this\Time == frame_buffer.Time
-} -> {
-    frame_buffer !-> rasterizer
-} :: {
-    exmth(CUDA, "lbm_fluid_renderer")
-}
+fluid_Renderer: (frame_buffer: Frame
+                 DDF: lbm_fluid.DDF req this\Time == frame_buffer.Time)
+{
+    exmth(CUDA, "lbm_fluid_renderer", frame_buffer, DDF)
+} -> { frame_buffer !-> rasterizer }
 
 Unit: {value: Numeric, unit: str}
 
-save_image:> {str dest_path, extern Image} :: { exmth(C, "write_image_png", dest_path, Image) }
+save_image: (str dest_path, extern Image) {
+    exmth(C, "write_image_png", dest_path, Image)
+}
 
 do save_image("frame/path.png", last Frame(Time: 10 * Second) from all Renderer)

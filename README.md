@@ -8,7 +8,8 @@ A language for simply gluing things together, because duct tape and screws are o
 Often, implementing functionality is much easier in an isolated context, than it is within a large application.
 And this is justified, since everything has to, not just work, but work *together* in harmony and with efficiency.
 However this is not fun because it restraints bigger projects. With HotGlue-lang I want to test how much
-of the implementation of the interplay can be hidden behind a declarative descprition of the desired behaviour.
+of the implementation of the interplay can be hidden behind a declarative descprition of the desired behaviour,
+between independent code blocks (functions), which share an interface standard.
 
 ## The idea
 

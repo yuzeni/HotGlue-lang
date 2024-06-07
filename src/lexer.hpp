@@ -24,39 +24,67 @@ enum Token_enum : uint32_t {
     tkn_string,
 
     // keywords
-    tkn_s8, tkn_s16, tkn_s32, tkn_s64,
-    tkn_u8, tkn_u16, tkn_u32, tkn_u64,
-    tkn_f8, tkn_f16, tkn_f32, tkn_f64,
+    tkn_s8,
+    tkn_s16,
+    tkn_s32,
+    tkn_s64,
+    tkn_u8,
+    tkn_u16,
+    tkn_u32,
+    tkn_u64,
+    tkn_f8,
+    tkn_f16,
+    tkn_f32,
+    tkn_f64,
     tkn_str,
-    tkn_bool, tkn_true, tkn_false,
-    tkn_extern, tkn_exread, tkn_exwrite, tkn_exlayout,
-    tkn_AoS, tkn_SoA,
-    tkn_all, tkn_first, tkn_last,
+    tkn_bool,
+    tkn_true,
+    tkn_false,
+    tkn_extern,
+    tkn_exread,
+    tkn_exwrite,
+    tkn_exlayout,
+    tkn_AoS,
+    tkn_SoA,
+    tkn_all,
+    tkn_first,
+    tkn_last,
     tkn_where,
     tkn_not,
-    tkn_req, tkn_else,
+    tkn_req,
+    tkn_else,
     tkn_from_decl,
     tkn_expa,
     tkn_trigger,
     tkn_using,
     tkn_do,
-    
-    // operators
-    tkn_func,                 // :>
-    tkn_from_imp, tkn_to_imp, // <- ->
-    tkn_not_from, tkn_not_to, // !<- !->
-    tkn_func_body,            // ::
+    tkn_this,
 
-    tkn_update_add, tkn_update_sub, tkn_update_mul, tkn_update_div, tkn_update_pow, tkn_update_mod,
-    tkn_increment, tkn_decrement,
+    // operators
+    tkn_func, // :>
+    tkn_to_imp,
+    tkn_not_to,    // !<- !->
+    tkn_func_body, // ::
+
+    tkn_update_add,
+    tkn_update_sub,
+    tkn_update_mul,
+    tkn_update_div,
+    tkn_update_pow,
+    tkn_update_mod,
+    tkn_increment,
+    tkn_decrement,
     tkn_pow,
-    tkn_and, tkn_or,
-    tkn_eq, tkn_neq,
-    tkn_less_eq, tkn_greater_eq,
-    
-    
+    tkn_and,
+    tkn_or,
+    tkn_eq,
+    tkn_neq,
+    tkn_less_eq,
+    tkn_greater_eq,
+
     tkn_SIZE
 };
+
 
 constexpr const char* get_mul_char_token_name(Token_enum tkn);
 std::string get_token_name_str(Token_enum tkn);
@@ -90,7 +118,6 @@ struct Input {
     std::vector<Source> srcs;
 
 private:
-
     std::vector<const char*> srcs_idx_sorted;
 };
 
@@ -130,10 +157,11 @@ public:
     void print_token(Token& tkn, bool show_content = false, bool keep_line_location = true) const;
 
     template<typename... Args>
-    void parsing_error(Token& tkn, const char* msg, Args... args) {parsing_error(tkn.ptr, msg, args...); }
+    void parsing_error(Token& tkn, const char* msg, Args... args) { parsing_error(tkn.ptr, msg, args...); }
     
     template<typename... Args>
-    void parsing_error(char* p, const char* msg, Args... args) {
+    void parsing_error(char* p, const char* msg, Args... args)
+    {
 	Source_location src_loca = input.get_src_location(p);
 	auto line = get_line_with_error(p, input.get_src_ref(p));
 	const Source& src = input.get_src_ref(p);
@@ -157,8 +185,6 @@ private:
     bool push_next_token();
     std::pair<std::string, std::string> get_line_with_error(const char* p, const Source& source);
 
-    enum class Task_result { exit, exit_result, no_exit };
-
     struct Token_window {
 	bool push(Token tkn);
 	bool step();
@@ -171,7 +197,9 @@ private:
     private:
 	const int size = n_future_tkns + n_past_tkns;
 	Token tkns[n_future_tkns + n_past_tkns] {Token{}};
-    } tkns;
+    };
+    
+    Token_window tkns;
 };
 
 bool is_open_bracket(char c);
@@ -180,3 +208,4 @@ bool is_close_bracket(char c);
 bool is_delim_tkn_left(Token_enum type);
 bool is_delim_tkn_right(Token_enum type);
 bool is_binary_set_op(Token_enum type);
+bool is_reference_tkn(Token_enum type);

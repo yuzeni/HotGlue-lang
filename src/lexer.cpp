@@ -18,7 +18,8 @@
 #  include "tracy/Tracy.hpp"
 #endif
 
-Source& Source::operator=(Source&& other) {
+Source& Source::operator=(Source&& other)
+{
     data = other.data;
     size = other.size;
     info = other.info;
@@ -26,49 +27,58 @@ Source& Source::operator=(Source&& other) {
     return *this;
 }
 
-Source_location Input::get_src_location(const char* ptr) const {
+Source_location Input::get_src_location(const char* ptr) const
+{
     uint32_t idx = 0xffffffff;
-    if(!srcs_idx_sorted.empty() && ptr >= srcs_idx_sorted.back())
+    if(!srcs_idx_sorted.empty() && ptr >= srcs_idx_sorted.back()) {
 	idx = srcs_idx_sorted.size() - 1;
+    }
     else {
 	auto bound_src = std::upper_bound(srcs_idx_sorted.begin(), srcs_idx_sorted.end(), ptr, std::less());
 	if(bound_src != srcs_idx_sorted.end() && bound_src != srcs_idx_sorted.begin())
 	    idx = bound_src - 1 - srcs_idx_sorted.begin();
     }
+    
     if(idx != 0xffffffff) {
 	const char* src_data = srcs[idx].data;
 	ptrdiff_t rel_ptr = ptr - src_data;
 	uint32_t line_idx = 0xffffffff;
-	if(!srcs[idx].line_begins.empty() && rel_ptr >= srcs[idx].line_begins.back())
+	if(!srcs[idx].line_begins.empty() && rel_ptr >= srcs[idx].line_begins.back()) {
 	    line_idx = srcs[idx].line_begins.size() - 1;
+	}
 	else {
 	    auto bound_line = std::upper_bound(srcs[idx].line_begins.begin(), srcs[idx].line_begins.end(), rel_ptr);
 	    if(bound_line != srcs[idx].line_begins.end() && bound_line != srcs[idx].line_begins.begin())
 		line_idx = bound_line - 1 - srcs[idx].line_begins.begin();
 	}
+	
 	if(line_idx != 0xffffffff) {
 	    uint32_t offset = ptr - (srcs[idx].line_begins[line_idx] + src_data);
 	    return {src_data, line_idx + 1, offset + 1};
 	}
-	//else HG_DEB_error("required line does not exist.");
     }
-    else HG_DEB_error("ptr doesn't belong to a source.");
+    else {
+	HG_DEB_error("ptr doesn't belong to a source.");
+    }
+    
     return {nullptr, 0, 0};
 }
 
-const Source& Input::get_src_ref(const char* ptr) const {
+const Source& Input::get_src_ref(const char* ptr) const
+{
     auto bound_src = std::upper_bound(srcs_idx_sorted.begin(), srcs_idx_sorted.end(), ptr, std::less());
     return srcs[bound_src - 1 - srcs_idx_sorted.begin()];
 }
 
-void Input::add_src(const char* data, size_t size, std::string info) {
+void Input::add_src(const char* data, size_t size, std::string info)
+{
     srcs.emplace_back(Source{data, size, info});
     srcs_idx_sorted.push_back(srcs.back().data);
     srcs.back().line_begins.push_back(0);
     std::sort(srcs_idx_sorted.begin(), srcs_idx_sorted.end(), std::less());
 }
 
-const char* token_name_table[tkn_SIZE - 256] {
+const char *token_name_table[tkn_SIZE - 256]{
     "eof",
     "none",
     "global_scope",
@@ -82,54 +92,80 @@ const char* token_name_table[tkn_SIZE - 256] {
     "string",
 
     // keywords
-    "s8", "s16", "s32", "s64",
-    "u8", "u16", "u32", "u64",
-    "f8", "f16", "f32", "f64",
+    "s8",
+    "s16",
+    "s32",
+    "s64",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "f8",
+    "f16",
+    "f32",
+    "f64",
     "str",
-    "bool", "true", "false",
-    "extern", "exr", "exw", "exlayout",
-    "AoS", "SoA",
-    "all", "first", "last",
+    "bool",
+    "true",
+    "false",
+    "extern",
+    "exr",
+    "exw",
+    "exlayout",
+    "AoS",
+    "SoA",
+    "all",
+    "first",
+    "last",
     "where",
     "not",
-    "req", "else",
+    "req",
+    "else",
     "from",
     "expa",
     "trigger",
     "using",
     "do",
-    
+    "this",
+
     // operators
     ":>",
-    "<-", "->",
-    "!<-", "!->",
+    "->",
+    "!->",
     "::",
-    // "..",
-    // "...",
-    // ".\\",
-    // "\\\\",
-    // "\\\\\\",
-    "+=", "-=", "*=", "/=", "**=", "%=",
-    "++", "--",
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "**=",
+    "%=",
+    "++",
+    "--",
     "**",
-    "&&", "||",
-    "==", "!=",
-    "<=", ">=",
+    "&&",
+    "||",
+    "==",
+    "!=",
+    "<=",
+    ">=",
 };
 
-constexpr const char* get_mul_char_token_name(Token_enum tkn) {
+constexpr const char *get_mul_char_token_name(Token_enum tkn)
+{
     HG_DEB_assert(tkn >= 256, "Token not in name table, get the char instead!");
     return token_name_table[tkn - 256];
 }
 
-std::string get_token_name_str(Token_enum tkn) {
+std::string get_token_name_str(Token_enum tkn)
+{
     if(tkn >= 256)
 	return token_name_table[tkn - 256];
     return std::string{char(tkn)};
 }
 
 // little bit ugly (I would like to iterate over keywords), but fast
-Token_enum keyword_compare(const std::string_view sv) {
+Token_enum keyword_compare(const std::string_view sv)
+{
 #ifdef TRACY_ALL
     ZoneScoped;
 #endif
@@ -174,13 +210,15 @@ Token_enum keyword_compare(const std::string_view sv) {
     case cte_hash_c_str("expa"): return tkn_expa;
     case cte_hash_c_str("trigger"): return tkn_trigger;
     case cte_hash_c_str("using"): return tkn_using;
-    case cte_hash_c_str("do"): return tkn_do;	
+    case cte_hash_c_str("do"): return tkn_do;
+    case cte_hash_c_str("this"): return tkn_this;
     default: return tkn_ident;
     }
 }
 
-std::optional<Token> check_for_operator(char** p, char* eof, Token_enum type, const char *op) {
-    
+std::optional<Token> check_for_operator(char **p, char *eof, Token_enum type,
+                                        const char *op)
+{
     if((*p)+strlen(op) >= eof)
 	return {};
     size_t i;
@@ -191,53 +229,70 @@ std::optional<Token> check_for_operator(char** p, char* eof, Token_enum type, co
     return Token{type, *p - i};
 }
 
-bool is_whitespace(char c) {
+bool is_whitespace(char c)
+{
     return c == ' ' || c == '\n' || c == '\t' || c == '\f' || c == '\r' || c == '\v';
 }
 
-bool is_new_line(char c) {
+bool is_new_line(char c)
+{
     return c == '\n' || c == '\f' || c == '\r';
 }
 
-bool is_alpha(char c) {
+bool is_alpha(char c)
+{
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
-bool is_digit(char c) {
+bool is_digit(char c)
+{
     return c >= '0' && c <= '9';
 }
 
-bool is_simple_char(char c) {
+bool is_simple_char(char c)
+{
     return (c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~');
 }
 
-bool is_open_bracket(char c) {
+bool is_open_bracket(char c)
+{
     return c == '(' || c == '[' || c == '{';
 }
 
-bool is_close_bracket(char c) {
+bool is_close_bracket(char c)
+{
     return c == ')' || c == ']' || c == '}';
 }
 
-bool is_delim_tkn_left(Token_enum type) {
+bool is_delim_tkn_left(Token_enum type)
+{
     if(type >= 256)
 	return false;
     char c = (char)type;
     return is_open_bracket(c) || c == ',';
 }
 
-bool is_delim_tkn_right(Token_enum type) {
+bool is_delim_tkn_right(Token_enum type)
+{
     if(type >= 256)
 	return false;
     char c = (char)type;
     return is_close_bracket(c) || c == ',';
 }
 
-bool is_binary_set_op(Token_enum type) {
-    return type == '.' || type == '\\';
+bool is_binary_set_op(Token_enum type)
+{
+  return type == '.' || type == '\\';
 }
 
-Token::Token(Token_enum type, char* ptr, void* data) : ptr(ptr), type(type), i(0) {
+bool is_reference_tkn(Token_enum type)
+{
+    return type == tkn_ident || type == tkn_placeholder;
+}
+
+Token::Token(Token_enum type, char *ptr, void *data)
+    : ptr(ptr), type(type), i(0)
+{
     bool d_a = false;
     if (data) {
 	switch (type) {
@@ -248,11 +303,13 @@ Token::Token(Token_enum type, char* ptr, void* data) : ptr(ptr), type(type), i(0
 	default: hg_error(HG_err::parsing, "The token type does not support data.");
 	}
     }
+    
     if (d_a)
 	HG_DEB_assert(data, "The data ptr was empty");
 }
 
-void Lexer::load_input_from_string(const char* data) {
+void Lexer::load_input_from_string(const char *data)
+{
     static int from_string_cnt = 0;
     from_string_cnt++;
     input.add_src(data, std::strlen(data), "raw input " + std::to_string(from_string_cnt));
@@ -260,20 +317,23 @@ void Lexer::load_input_from_string(const char* data) {
     after_load_init();
 }
 
-void Lexer::load_input_from_file(const char* file_path) {
+void Lexer::load_input_from_file(const char *file_path)
+{
     std::pair<char*, size_t> file = parse_file_cstr(file_path);
     input.add_src(file.first, file.second, file_path);
     
     after_load_init();
 }
 
-void Lexer::after_load_init() {
+void Lexer::after_load_init()
+{
     p = (char*)input.srcs.back().data;
     p_begin = p;
     eof = p + input.srcs.back().size;
 }
 
-bool Lexer::next_token() {
+bool Lexer::next_token()
+{
     bool result = push_next_token();
     result &= tkns.step();
     
@@ -282,19 +342,24 @@ bool Lexer::next_token() {
     return result;
 }
 
-Token& Lexer::peek_next_token() {
+Token &Lexer::peek_next_token()
+{
     push_next_token();
     // will just read Token{0} if get_next_token fails
     return tkns.tkn_at(1);
 }
- 
-bool Lexer::push_next_token() {
+
+bool Lexer::push_next_token()
+{
 #ifdef TRACY_ALL
     ZoneScoped;
 #endif
-    if (p == eof) p = nullptr;
-    if (!p) return tkns.push(Token{tkn_eof, eof});
-    if (tkns.n_preparsed()) return true;
+    if (p == eof)
+	p = nullptr;
+    if (!p)
+	return tkns.push(Token{tkn_eof, eof});
+    if (tkns.n_preparsed())
+	return true;
 	
     // skip whitespace and comments
     for (;;) {
@@ -303,8 +368,9 @@ bool Lexer::push_next_token() {
 		input.srcs.back().line_begins.push_back(p - p_begin);
 		++p;
 	    }
-	    else
+	    else {
 		++p;
+	    }
 	}
 	if (p[0] == '/' && p[1] == '*') {
 	    p += 2;
@@ -411,8 +477,8 @@ bool Lexer::push_next_token() {
     return next_token();
 }
 
-void Lexer::print_token(Token& tkn, bool show_content, bool keep_line_location) const {
-
+void Lexer::print_token(Token &tkn, bool show_content, bool keep_line_location) const
+{
     static int scope_cnt = 0;
     static int tab_cnt = 0;
     static uint32_t current_line = 0;
@@ -450,8 +516,8 @@ void Lexer::print_token(Token& tkn, bool show_content, bool keep_line_location) 
     std::cout << " ";
 }
 
-std::pair<std::string, std::string> Lexer::get_line_with_error(const char* p, const Source& source) {
-
+std::pair<std::string, std::string> Lexer::get_line_with_error(const char *p, const Source &source)
+{
     int64_t begin = 0, end = 0;
     std::string line, error_ptr = "\033[91m";
 
@@ -471,7 +537,8 @@ std::pair<std::string, std::string> Lexer::get_line_with_error(const char* p, co
     return { line, error_ptr };
 }
 
-bool Lexer::Token_window::push(Token tkn) {
+bool Lexer::Token_window::push(Token tkn)
+{
     if(idx_last + 1 > size)
 	return false;
     ++idx_last;
@@ -479,7 +546,8 @@ bool Lexer::Token_window::push(Token tkn) {
     return true;
 }
 
-bool Lexer::Token_window::step() {
+bool Lexer::Token_window::step()
+{
     HG_DEB_assert(n_preparsed(), "Can't step, no preparsed tokens.");
 
     tkns[size - 1] = Token{};
@@ -489,7 +557,8 @@ bool Lexer::Token_window::step() {
     return true;
 }
 
-bool Lexer::Token_window::pushstep(Token tkn) {
+bool Lexer::Token_window::pushstep(Token tkn)
+{
     if(!push(tkn))
 	return false;
     return step();

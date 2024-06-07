@@ -54,6 +54,7 @@ enum class HG_err {
   type,
   out_of_range,
   mem_alloc,
+  not_implemented,
   SIZE
 };
 
@@ -68,16 +69,21 @@ namespace HG_errors {
 	"ambiguous",
 	"type",
 	"out of range",
-	"bad memory allocation"
+	"bad memory allocation",
+	"not implemented"
+	
     };
 
-    static constexpr const char* err_type_to_str(HG_err err_type) {
+    static constexpr const char* err_type_to_str(HG_err err_type)
+    {
 	return err_enum_name_table[int(err_type)];
     }
     
     enum class Log_type { INFO, WARNING, ERROR };
+    
     template<typename... Args>
-    void log(Log_type log_type, const char* msg, Args... args) {
+    void log(Log_type log_type, const char* msg, Args... args)
+    {
 	char* log_msg = new char[max_err_msg_size];
 	std::snprintf(log_msg, max_err_msg_size, msg, args...);
  	switch(log_type){
@@ -89,24 +95,27 @@ namespace HG_errors {
     }
 }
 
-template<typename... Args>
-void hg_info(const char *msg, Args... args) {
+template <typename... Args>
+void hg_info(const char *msg, Args... args)
+{
 #if HG_LOG_INFO
     using namespace HG_errors;
     log(Log_type::INFO, msg, args...);
 #endif
 }
 
-template<typename... Args>
-void hg_warn(const char *msg, Args... args) {
+template <typename... Args>
+void hg_warn(const char *msg, Args... args)
+{
 #if HG_LOG_WARNINGS
     using namespace HG_errors;
     log(Log_type::WARNING, msg, args...);
 #endif
 }
 
-template<typename... Args>
-void hg_error(HG_err err_type, const char *msg, Args... args) {
+template <typename... Args>
+void hg_error(HG_err err_type, const char *msg, Args... args)
+{
     using namespace HG_errors;
 #if HG_LOG_ERRORS
     char* log_msg = new char[max_err_msg_size];
@@ -133,15 +142,30 @@ void hg_error(HG_err err_type, const char *msg, Args... args) {
 	hg_error(HG_err::error, msg " FILE:%s LINE:%d", __FILE__, __LINE__, ##__VA_ARGS__); \
 	exit(1);							\
     } while (0)
-  
-#  define HG_DEB_assert(x, msg, ...)					\
-    do {								\
-	if (!(x)) {							\
-	    hg_error(HG_err::assertion,"'" msg "'" " FILE:%s LINE:%d", __FILE__, __LINE__, ##__VA_ARGS__); \
-	    HG_DEB_break();						\
-	}								\
+
+#define HG_DEB_assert(x, msg, ...)                                             \
+  do {                                                                         \
+    if (!(x)) {                                                                \
+      hg_error(HG_err::assertion,                                              \
+               "'" msg "'"                                                     \
+               " FILE:%s LINE:%d",                                             \
+               __FILE__, __LINE__, ##__VA_ARGS__);                             \
+      HG_DEB_break();                                                          \
+    }                                                                          \
+  } while (0)
+
+#  define HG_DEB_not_implemented		\
+    do {					\
+	hg_error(HG_err::not_implemented,	\
+		 "lacking implementation"	\
+		 " FILE:%s LINE:%d",		\
+		 __FILE__, __LINE__);		\
+	HG_DEB_break();				\
     } while (0)
 #else
 #  define HG_DEB_error(msg, ...)
 #  define HG_DEB_assert(x, msg, ...)
+#  define HG_DEB_not_implemented
 #endif
+
+

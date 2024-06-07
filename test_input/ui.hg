@@ -1,0 +1,55 @@
+
+Mouse_input: {
+    exw pos: {s32: x: 0, s32: y: 0}
+    
+    pos_delta: {
+        old_pos: pos
+        delta: s32: 0
+    } :: {
+	delta = pos - old_pos
+	old_pos = pos
+    } trigger pos != pos_delta.old_pos
+    
+    exw scroll_steps: s32: 0
+    exw left_click: bool: false
+    exw right_click: bool: false
+    exw middle_click: bool: false
+}
+
+exw Keyboard_input: {
+    is_key_space_down: bool: false
+    is_key_enter_down: bool: false
+    // ...
+}
+
+Window: {
+    width: u32 req this < 4000
+    height: u32 req this < 4000
+    pos {x: s32, y s32}
+    drag_border_size: u32: 3
+} :: {
+    
+} trigger bool:exmth(C, "box_intersec_test", width, height, pos.x, pos.y, Mouse_input.pos)
+          && !bool:exmth(C, "box_intersec_test", width - 2*drag_border_size, height - 2* drag_border_size, pos.x + drag_border_size, pos.y + drag_border_size, Mouse_input.pos)
+
+Box: {
+    width: u32 req this < Window.width
+    height: u32 req this < Window.height
+    pos: {x: u32, y: u32}
+}
+
+Main_window: {
+
+    Box{}
+    Progress_bar: {
+        Box{width: }
+    }
+
+}
+
+
+update_gui:> {} -> {} :: {
+    exmth(C, "get_input", Mouse_input, Keyboard_input)
+}
+
+do update_gui

@@ -1,0 +1,50 @@
+** How Hotglue works
+*** Objects
+**** Object Declaration
+- An object is declared using ~ident : description~, within a particular scope.
+- Applying multiple descriptions ~ident : descr_1 : descr_2 : ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
+***** Arrays
+- Declare an array using ~ident : description[x]~ where x > 0. x can be excluded.
+- Multidimensional arrays can be defined as well using ~ident : description[x][y]...~
+- Any object which has an array of unknown size, does not exist as object, but only as type.
+***** Signifiers
+Put them in front of the identifier.
+| $\vert{}$    | The object will stay constant, once defined.                                           |
+| extern       | The object is not store inside HotGlue and therefore not directly accessable.          |
+| exr          | The object is accessable from inside HotGlue, but will be read externally.             |
+| exw          | As above, but will be written to externally.                                           |
+| exlayout SoA | If the object is a HotGlue array of external objects, the external layout will be SoA. |
+| exlayout AoS | As above, but the layout will be AoS.                                                  |
+
+***** On identifiers
+- Every object has an identifier which must be unique inside the scope.
+- If identifiers from enclosing scopes collide, then the new identifier will *overshadow* the old identifier.
+***** On the description
+There are two types of Objects, Data objects and function objects.
+- *declare a data objects* using ~ident : {x}~ where ~x~ is a set of object declarations.
+- *declare a function object* using ~ident : (x){y}->{z}~ where ~x~ are the arguments to the function,
+  ~y~ is the procedure where the functionality is implemented and ~z~ is the set of objects which will be returned.
+**** Data Objects
+- Contains a set of data objects, function objects or unnamed self-activating procedures,
+  which require access to the objects of the data object.
+**** Function Objects
+~ident : (args) {procedure} -> {object}~
+- Function Objects return the Data Object defined in their ~->{}~ structure, if provided with the correct arguments,
+  using ~funv_obj(param_1, param_2, ...)~.
+- Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~,
+  which were not declared inside the funciton object, or passed in as argument.
+- The arguments of the function objects can be function and/or data objects.
+- Assert additional requirements on any argument using ~req~ as in ~arg req requirement~,
+  where ~requirement~ is a boolean expression.
+  
+*** Scopes
+- A scope is the whole description of an object definition.
+- Objects in enclosing scopes can be accessed from within the enclosed scope, if they were declared before that scope.
+- The ~this~ keyword can be used in place of the identifier of the current scope.
+*** Types
+- All objects are types, but not all types are objects. Types become objects, as soon as they have a clear representation in memory.
+- Types can be compared using ~==, <, <=, >, >=, !=~ (maybe add some set operators?)
+*** Set Operations
+set operations can only be resolved, after 
+| all | the set that includes everything in global space |
+|     |                                                  |

@@ -9,13 +9,13 @@
 
 enum Node_type : uint16_t {
     nt_none,
-    
+
     nt_type,
-    nt_array_type,       // a type with []
+    nt_array_type, // a type with []
     nt_object,
-    nt_attribute,   // like: req, not_from, to, ...
+    nt_attribute, // like: req, not_from, to, ...
     nt_builtin_func,
-    
+
     nt_func,
     nt_func_in,
     nt_func_out,
@@ -25,12 +25,13 @@ enum Node_type : uint16_t {
 
     nt_arithm_op,
     nt_arithm_expr,
-    
+
     nt_object_op,
     nt_object_expr,
-    
+
     nt_SIZE
 };
+
 
 struct Ast_node {
     Ast_node() : type(nt_none), tkn{} {}
@@ -51,7 +52,6 @@ enum Type_flags : uint16_t {
     TF_array     = 1 << 1, // Doesn't inform about the dimensionality of the array, just that it is one.
     TF_ident     = 1 << 2, // Declaration with previously defined type
     TF_set       = 1 << 3, // Declaration with a set of types
-
 };
 
 struct Identifier_info {
@@ -65,7 +65,6 @@ struct Identifier_info {
 };
 
 enum Print_ast_enum : uint64_t {
-
     PN_SHOW_CONTENT = 1,
     PN_SUPER        = 1 << 1,
 };
@@ -80,8 +79,10 @@ enum Print_ast_enum : uint64_t {
 
 struct Ast {
 
-    uint64_t find_or_add_ident(Ast_node* node);
-    
+    // uint64_t find_or_add_ident(Ast_node* node, uint64_t scope_hash);
+    uint64_t find_ident(Ast_node* node, uint64_t scope_hash);
+    uint64_t add_ident(Ast_node* node, uint64_t scope_hash);
+
     void print(Print_ast_enum config = Print_ast_enum(PN_SHOW_CONTENT)) const; // | PN_SUPER
     void print_node(const Ast_node* node, Print_ast_enum config, int depth = 0) const;
 
