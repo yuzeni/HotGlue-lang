@@ -1,14 +1,9 @@
 
-// all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file2
+// all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file
 
 Integer: {s8, s16, s32, s64, u8, u16, u32, u64}
 Numeric: {s8, s16, s32, s64, u8, u16, u32, u64, f8, f16, f32, f64}
 Real: {f8, f16, f32, f64}
-
-exmth: {
-    Compute_platforms: ident: { C, Cpluplus, OpenCL, CUDA }
-    method_name: str
-}
 
 exobj: {
     id: u64
@@ -117,7 +112,7 @@ o69: lbm_fluid: {
 
 advance_lbm_fluid: (fluid: lbm_fluid req Time from this.attribs == fluid.Time)
 {
-    exmth(CUDA, "t_step_lbm_fluid") // like with Time there can only be one for advance_lbm_fluid
+    funCUDA t_step_lbm_fluid(using lbm_fluid.attribs._ DDF, CCQ, CFlags /*...*/)(fluid)
     fluid.Time += fluid.delta_t
 } -> {fluid}
 
@@ -126,42 +121,47 @@ get_cc_count: (fluid: lbm_fluid)
     meshes: Mesh[]: Mesh from all where first id from this.\all <= fluid.id_interac_list && first Time from Mesh\all == fluid.Time)
     fluid.attribs.CC_count: 0
     
-    expa (mesh: Mesh: meshes) {
-        exmth(CUDA, "get_cc_count", fluid, mesh)
+    expand (mesh: Mesh: meshes) {
+        funCUDA get_cc_count(mesh)(fluid)
     }
     
-    fluid.attribs.CC_count.time: fluid.Time
+    fluid.attribs.CC_count.time = fluid.Time
 } -> {fluid, meshes}
 
 calc_ccq_intersec: (fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Time
                     meshes: Mesh[] req all Mesh\id from this <= fluid.id_interac_list && all Mesh\Time from this == fluid.Time)
 {
-    expa (mesh: Mesh: meshes) {
+    meshes: Mesh[]: Mesh from all where first id from this.\all <= fluid.id_interac_list && first Time from Mesh\all == fluid.Time)
+    expand (mesh: Mesh: meshes) {
         fluid.attribs.CC_count = 0
-        exmth(CUDA, "calc_ccq_intersections", mesh, fluid.attribs.CC_count)
+        funCUDA calc_ccq_intersections(mesh, fluid.attribs.CC_count)(fluid)
     }
     
     fluid.attribs.CCQ.time = fluid.Time
 } -> {fluid, meshes}
 
-Renderer: () -> { framebuffer }
+Renderer: (Frame:this, _) {_} -> { Frame, _ }
 
 rasterizer: Renderer: (frame_buffer: Frame
-                       mesh: Mesh req this\Time == frame_buffer.Time) // \ asks for the occurence of Time in the object that mesh came from
+                       mesh: Mesh req this\Time == frame_buffer.Time)
 {
-    exmth(CUDA, "mesh_rasterizer", frame_buffer, mesh)
+    funCUDA mesh_rasterizer(frame_buffer, mesh)
 } -> {frame_buffer}
 
 fluid_Renderer: (frame_buffer: Frame
-                 DDF: lbm_fluid.DDF req this\Time == frame_buffer.Time)
+		 fluid: lbm_fluid req this.attribs.DDF\Time == frame_buffer.Time)
 {
-    exmth(CUDA, "lbm_fluid_renderer", frame_buffer, DDF)
+    funCUDA lbm_fluid_renderer(frame_buffer, using fluid.attribs._ DDF, r_opacity, r_opacity_fade, r_ray_step_size, r_rgb_color_scheme)(fluid)
 } -> { frame_buffer !-> rasterizer }
 
 Unit: {value: Numeric, unit: str}
 
 save_image: (str dest_path, extern Image) {
-    exmth(C, "write_image_png", dest_path, Image)
+    funC write_image_png(dest_path, Image)
 }
 
-do save_image("frame/path.png", last Frame(Time: 10 * Second) from all Renderer)
+do {
+    expand (t: u64 req t < 10000) {
+        save_image("frame/path.png", last Frame(Time: t * Second) from all Renderer)
+    }
+}

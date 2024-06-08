@@ -1,4 +1,4 @@
-** How Hotglue works
+** The HotGlue spec
 *** Objects
 **** Object Declaration
 - An object is declared using ~ident : description~, within a particular scope.
@@ -15,18 +15,37 @@ Put them in front of the identifier.
 | exw          | As above, but will be written to externally.                                           |
 | exlayout SoA | If the object is a HotGlue array of external objects, the external layout will be SoA. |
 | exlayout AoS | As above, but the layout will be AoS.                                                  |
-
-***** On identifiers
+***** On Requirements
+- Pose requirements on the creation of objects using ~ident : description req requirement~.
+- The object cannot be created if the ~requirement~ evaluates to ~false~.
+  This can cause *runtime errors*, when a value of external origin is used somewhere.
+- ~requirement~ is still inside the scope of description, so ~this~ would evaluate to ~ident~.
+***** On Identifiers
 - Every object has an identifier which must be unique inside the scope.
-- If identifiers from enclosing scopes collide, then the new identifier will *overshadow* the old identifier.
-***** On the description
-There are two types of Objects, Data objects and function objects.
-- *declare a data objects* using ~ident : {x}~ where ~x~ is a set of object declarations.
-- *declare a function object* using ~ident : (x){y}->{z}~ where ~x~ are the arguments to the function,
+- If identifiers from enclosing scopes collide, then the most recent identifier will *overshadow* the older identifier.
+- It is legal to declare an object with the same name as the object it is declared as.
+  For example ~Time: Time~ or the equivalent ~Time: this~.
+  Note that any declaration, inside that scope, of the form ~ident: Time~ will now reference the ~Time: Time~ object.
+***** On the Description
+There are two types of objects, data objects and function objects.
+- *Declare a data objects* using ~ident : {x}~ where ~x~ is a set of object declarations.
+- *Declare a function object* using ~ident : (x){y}->{z}~ where ~x~ are the arguments to the function,
   ~y~ is the procedure where the functionality is implemented and ~z~ is the set of objects which will be returned.
+***** On Defined vs. Undefined
+****** When?
+- If any object inside it, is undefined.
+- If there are any variables without concrete values.
+****** Examples
+| ~a: s32~       | undefined |
+| ~b: s32: 345~  | defined   |
+| ~c: { a b }~   | undefined |
+| ~d:(){}->{4}~  | defined   |
+| ~d:(_){}->{4}~ | undefined |
+In the last example, a placeholder is used to indicate, that the arguments are missing.
 **** Data Objects
 - Contains a set of data objects, function objects or unnamed self-activating procedures,
   which require access to the objects of the data object.
+- Everything inside the data object, must be *fully defined*.
 **** Function Objects
 ~ident : (args) {procedure} -> {object}~
 - Function Objects return the Data Object defined in their ~->{}~ structure, if provided with the correct arguments,
@@ -36,15 +55,88 @@ There are two types of Objects, Data objects and function objects.
 - The arguments of the function objects can be function and/or data objects.
 - Assert additional requirements on any argument using ~req~ as in ~arg req requirement~,
   where ~requirement~ is a boolean expression.
+- Everything inside the function object, must be *fully defined*.
   
 *** Scopes
 - A scope is the whole description of an object definition.
 - Objects in enclosing scopes can be accessed from within the enclosed scope, if they were declared before that scope.
 - The ~this~ keyword can be used in place of the identifier of the current scope.
+  
 *** Types
-- All objects are types, but not all types are objects. Types become objects, as soon as they have a clear representation in memory.
-- Types can be compared using ~==, <, <=, >, >=, !=~ (maybe add some set operators?)
+- All objects are types, but not all types are objects. Types become objects, as soon as they have a
+  clear representation in memory.
+- Types can be [[*Boolean set ops][compared]].
+- There are types of function objects or data objects.
+- [[*Examples][Examples]], everything which is *undefined* is a type, and not an object.
+  
 *** Set Operations
-set operations can only be resolved, after 
-| all | the set that includes everything in global space |
-|     |                                                  |
+- Most set operations can be evaluated in the first compiler pass.
+- They must be evaluated in a following pass, if they involve the ~from all~ structure.
+- They must be evaluated at runtime, if they involve the ~where~ keyword, such that it depends on variables
+  which are not constant and fully defined.
+**** Set Creation
+| *op*        | *description*                                                                       | *requirement*       |
+|-------------+-------------------------------------------------------------------------------------+---------------------|
+| ~all~       | the set that contains all *objects* (no types) in global space                      |                     |
+| ~a.b~       | *type* ~b~ from within *type* ~a~                                                   | ~b~ is ident        |
+| ~a.~        | all *objects* (no types) from within ~a~                                            |                     |
+| ~a.[b]~     | *object* at index ~b~ from within *object* ~a~                                      | ~b~ is integer      |
+| ~a.all~     | all *objects* down from ~a~ recursively                                             |                     |
+| ~a\b~       | ~b~ from within the *object or type*, which contains ~a~                            |                     |
+| ~a\~        | all *objects* from within the object, which contains ~a~                            | ~b~ is ident        |
+| ~a\all~     | all *objects* up from the object recursively, which contains ~a~                    |                     |
+| ~a\this~    | the *object or type* that contains ~a~                                              |                     |
+| ~a from b~  | all *objects* of type ~a~ in the set ~b~                                            | ~a~ is ident        |
+| ~a where b~ | all *objects* in the set ~a~ for which the boolean expression ~b~ evaluates to true | ~b~ is boolean expr |
+| ~last a~    | the *object*                                                                        |                     |
+**** Boolean set ops
+These work *on Types and on Objects*.
+| ~==~     | are sets euqual?                               |
+| ~!=~     | are sets not equal?                            |
+| ~a > b~  | is ~b~ contained in ~a~, but not equal to ~a~? |
+| ~a >= b~ | is ~b~ contained in ~a~?                       |
+| ~a < b~  | is ~a~ contained in ~b~, but not equal to ~b~? |
+| ~a <= b~ | is ~a~ contained in ~b~?                       |
+**** Mathematical set ops
+These work *only on Objects*.
+***** Requirements
+- Identical memory layout (and identical base types).
+- No ~str~ or ~ident~ types.
+- No ~extern~ objects.
+***** Supported ops
+| *op*         | *description*                 | *requirement*               |
+|--------------+-------------------------------+-----------------------------|
+| ~a + b~      | add ~b~ to ~a~                |                             |
+| ~a - b~      | sub ~b~ from ~a~              |                             |
+| ~a * b~      | mul ~a~ with ~b~              |                             |
+| ~a / b~      | div ~a~ by ~b~                |                             |
+| ~a ** b~     | pow ~a~ to ~b~                |                             |
+| ~a % b~      | mod ~a~ by ~b~                | only Integer                |
+| ~a = b~      | ~a~ update ~b~                | non const ~a~               |
+| ~a =+ b~     | ~a~ update add ~b~            | non const ~a~               |
+| ~a =- b~     | ~a~ update sub ~b~            | non const ~a~               |
+| ~a =* b~     | ~a~ update mul ~b~            | non const ~a~               |
+| ~a =/ b~     | ~a~ update div ~b~            | non const ~a~               |
+| ~a =** b~    | ~a~ update pow ~b~            | non const ~a~               |
+| ~a =% b~     | ~a~ update mod ~b~            | only Integer, non const ~a~ |
+| ~sum(a)~     | sum of all elements  ~a~      |                             |
+| ~product(a)~ | procut of all elements in ~a~ |                             |
+
+*** Symbolic Math
+- Using any of the [[*Boolean set ops][Boolean set ops]], equations can be formulated,
+  if the expression contains a single ~ident: symbol~ declaration, for example ~5 + 8 == x: symbol~.
+- The declared symbol can then be accessed inside that scope.
+- *Symbols do not belong to the object*, they are just helper variables.
+
+*** Syntax Sugar
+**** The ~expand~ Structure
+
+**** The ~using~ Keyword
+
+
+*** Getting Results
+**** The ~do~ Keyword
+- Use ~do procedure~ to actually do what is described in the ~procedure~.
+  HotGlue will figure out how to obtain the objects, which are used in the procedure.
+- Usually calls an external procedure, which takes over control.
+- The external procedure may terminate HotGlue, or change objects with the ~exw~ signifier.

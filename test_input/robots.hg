@@ -52,7 +52,7 @@ Mechanical_part: (n_joints: u32)
 Robot: {
     | mech_parts: Mechanical_part[]
     | parts: Part[]
-    Time: 0 req Time from this\first.all == this
+    Time: 0 req Time from this\this.all == this
     update_frequency: Time
     
     trigger !(Time % update_frequency) {
@@ -75,11 +75,11 @@ Render_buffer: {
     Time: this
 }
 
-Rasterizer: (Mesh: this         req Time from this\first.all == t:symbol,
+Rasterizer: (Mesh: this         req Time from this\this.all == t:symbol,
              Render_buffer:this req this.Time == t)
 {
     exmth: this(CUDA, "rasterize_triangles", Mesh, Render_buffer)
-} -> {Render_buffer <- Mesh\first}
+} -> {Render_buffer <- Mesh\this}
 
 
 Constraint: {
@@ -91,7 +91,7 @@ Joint_to_Constraint: (Joint)
     constraint: Constraint /*some conversion procedure*/
 } -> {constraint}
 
-Physics: (exlayout SoA meshes: all Part.Mesh req all Time from this.Mesh == t:symbol && t == future_time - dt
+Physics: (exlayout SoA meshes: Mesh[]: all Part.Mesh req all Time from this.Mesh == t:symbol && t == future_time - dt
           constraints: Constraint[]: Joint_to_Constraint(all Mechanical_part.joints.Joint)
           future_time: Time
           | dt: f32: 0.1 * Seconds)
