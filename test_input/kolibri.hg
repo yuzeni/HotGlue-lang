@@ -1,6 +1,11 @@
 
 // all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file
 
+my_c: extern include "src/my_c_functions.c"
+my_cuda: extern include "src/some_cuda_kernels.cu"
+
+robots: include "robots.hg"
+
 Integer: {s8, s16, s32, s64, u8, u16, u32, u64}
 Numeric: {s8, s16, s32, s64, u8, u16, u32, u64, f8, f16, f32, f64}
 Real: {f8, f16, f32, f64}
@@ -157,7 +162,7 @@ fluid_Renderer: (frame_buffer: Frame
 Unit: {value: Numeric, unit: str}
 
 save_image: (str dest_path, extern Image) {
-    funC write_image_png(dest_path, Image)
+    funC write_image_png(dest_path, $Image)
 }
 
 do {

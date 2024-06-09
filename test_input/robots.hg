@@ -3,7 +3,7 @@ Image: u32[][]
 Depth_buffer: u32[][]
 Time: u64
 
-Mesh_content: {HAS_POS:bool, HAS_NORMAL:bool, HAS_COLOR:bool, HAS_UV:bool}
+Mesh_content: {HAS_POS: bool, HAS_NORMAL: bool, HAS_COLOR: bool, HAS_UV: bool}
 
 Mesh: (Mesh_content, n_verts: u32, n_ind: u32)
 -> extern {
@@ -36,7 +36,7 @@ Part: {
     physic_update: Time: 0
     Time: this
     
-    trigger physic_update > 0 {
+    trigger (physic_update > 0) {
         Time += physic_update
         physic_update = 0
     }
@@ -55,18 +55,18 @@ Robot: {
     Time: 0 req Time from this\this.all == this
     update_frequency: Time
     
-    trigger !(Time % update_frequency) {
+    trigger (!(Time % update_frequency)) {
         Update_robot(this)
     }
     
-    trigger Time from this.all == t:symbol { // very declarative, very complicated. Requires equation solving
+    trigger (Time from this.all == t:symbol) { // very declarative, very complicated. Requires equation solving
         Time = t
     }
 }
 
 Update_robot: (robot: Robot)
 {
-    exmth: this(C, "update_robot", robot)
+    funC update_robot(robot)
 } -> {robot}
 
 Render_buffer: {
@@ -75,10 +75,11 @@ Render_buffer: {
     Time: this
 }
 
-Rasterizer: (Mesh: this         req Time from this\this.all == t:symbol,
+Rasterizer: (t: symbol
+             Mesh: this         req Time from this\this.all == t,
              Render_buffer:this req this.Time == t)
 {
-    exmth: this(CUDA, "rasterize_triangles", Mesh, Render_buffer)
+    funCUDA rasterize_triangles(Mesh, Render_buffer)
 } -> {Render_buffer <- Mesh\this}
 
 
@@ -91,11 +92,12 @@ Joint_to_Constraint: (Joint)
     constraint: Constraint /*some conversion procedure*/
 } -> {constraint}
 
-Physics: (exlayout SoA meshes: Mesh[]: all Part.Mesh req all Time from this.Mesh == t:symbol && t == future_time - dt
+Physics: (t: symbol
+          exlayout SoA meshes: Mesh[]: all Part.Mesh req all Time from this.Mesh == t && t == future_time - dt
           constraints: Constraint[]: Joint_to_Constraint(all Mechanical_part.joints.Joint)
           future_time: Time
           | dt: f32: 0.1 * Seconds)
 {
-    exmth: this(CUDA, "calc_physics", meshes, constraints)
+    funCUDA calc_physics(meshes, constraints)
     meshes\physics_update += dt
 } -> { meshes }

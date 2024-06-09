@@ -1,61 +1,84 @@
 ** The HotGlue spec
 *** Objects
 **** Object Declaration
-- An object is declared using ~ident : description~, within a particular scope.
+- An object is declared using ~ident : description~, within any scope.
 - Applying multiple descriptions ~ident : descr_1 : descr_2 : ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
+  For example ~a: u32: 363~ is well defined and ~a: u32: u64~ won't compile.
+  
 ***** Arrays
-- Declare an array using ~ident : description[x]~ where x > 0. x can be excluded.
+- Declare an array using ~ident : description[x]~ where x > 0. x can be entirely excluded, to declare a
+  one dimensional array of unspecified length.
 - Multidimensional arrays can be defined as well using ~ident : description[x][y]...~
-- Any object which has an array of unknown size, does not exist as object, but only as type.
-***** Signifiers
-Put them in front of the identifier.
-| $\vert{}$    | The object will stay constant, once defined.                                           |
-| extern       | The object is not store inside HotGlue and therefore not directly accessable.          |
-| exr          | The object is accessable from inside HotGlue, but will be read externally.             |
-| exw          | As above, but will be written to externally.                                           |
-| exlayout SoA | If the object is a HotGlue array of external objects, the external layout will be SoA. |
-| exlayout AoS | As above, but the layout will be AoS.                                                  |
+- An array is fully defined, once its size is known and it has either the ~extern~ signifier or concrete values.
+  
+***** Object Signifiers
+Put them in front of the identifier: ~signifier ident: description~.
+| ~$\vert{}$~    | The object will stay constant, once defined.                                           |
+| ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.          |
+| ~exr~          | The object is accessable from inside HotGlue, but will be read externally.             |
+| ~exw~          | As above, but will be written to externally.                                           |
+| ~exlayout SoA~ | If the object is a HotGlue array of external objects, the external layout will be SoA. |
+| ~exlayout AoS~ | As above, but the layout will be AoS.                                                  |
+
 ***** On Requirements
 - Pose requirements on the creation of objects using ~ident : description req requirement~.
 - The object cannot be created if the ~requirement~ evaluates to ~false~.
   This can cause *runtime errors*, when a value of external origin is used somewhere.
 - ~requirement~ is still inside the scope of description, so ~this~ would evaluate to ~ident~.
+  
 ***** On Identifiers
 - Every object has an identifier which must be unique inside the scope.
 - If identifiers from enclosing scopes collide, then the most recent identifier will *overshadow* the older identifier.
 - It is legal to declare an object with the same name as the object it is declared as.
   For example ~Time: Time~ or the equivalent ~Time: this~.
   Note that any declaration, inside that scope, of the form ~ident: Time~ will now reference the ~Time: Time~ object.
+  
 ***** On the Description
 There are two types of objects, data objects and function objects.
 - *Declare a data objects* using ~ident : {x}~ where ~x~ is a set of object declarations.
 - *Declare a function object* using ~ident : (x){y}->{z}~ where ~x~ are the arguments to the function,
   ~y~ is the procedure where the functionality is implemented and ~z~ is the set of objects which will be returned.
+  
 ***** On Defined vs. Undefined
 ****** When?
 - If any object inside it, is undefined.
-- If there are any variables without concrete values.
+- If there are any variables either without concrete values or without the ~extern~ signifier.
 ****** Examples
-| ~a: s32~       | undefined |
-| ~b: s32: 345~  | defined   |
-| ~c: { a b }~   | undefined |
-| ~d:(){}->{4}~  | defined   |
-| ~d:(_){}->{4}~ | undefined |
-In the last example, a placeholder is used to indicate, that the arguments are missing.
+| ~a: s32~        | undefined |
+| ~b: s32: 345~   | defined   |
+| ~c: { a b }~    | undefined |
+| ~extern d: f64~ | defined   |
+| ~e:(){}->{4}~   | defined   |
+| ~f:(_){}->{4}~  | undefined |
+In the last example, a *placeholder* is used to indicate, that the arguments are indeed missing.
+
 **** Data Objects
 - Contains a set of data objects, function objects or unnamed self-activating procedures,
   which require access to the objects of the data object.
 - Everything inside the data object, must be *fully defined*.
+  
 **** Function Objects
 ~ident : (args) {procedure} -> {object}~
 - Function Objects return the Data Object defined in their ~->{}~ structure, if provided with the correct arguments,
   using ~funv_obj(param_1, param_2, ...)~.
-- Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~,
+- Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~ ([[*Procedures][Procedures]]),
   which were not declared inside the funciton object, or passed in as argument.
-- The arguments of the function objects can be function and/or data objects.
+- *The arguments* of the function objects can be function and/or data objects.
+  They must be *seperated by semicolons*.
 - Assert additional requirements on any argument using ~req~ as in ~arg req requirement~,
   where ~requirement~ is a boolean expression.
 - Everything inside the function object, must be *fully defined*.
+  
+**** Object instantiation
+- To create a data object (or type) ~A~ *from another data object* ~B~, simply declare ~A: B~.
+- To create a data object (or type) ~A~ *from a function object* ~B~, use ~A: B(args)~, where ~args~
+  is a list of the required arguments, which are again seperated by semicolons.
+- It is not possible to create a function object from a function object (as in currying).
+
+*** Procedures
+- Procedures are ordered sets of actionable statements such as ~a = b~. They are will be executed in the
+  order they were declared in.
+- They can't contain any object declarations, such that there are no temporary objects.
   
 *** Scopes
 - A scope is the whole description of an object definition.
@@ -74,6 +97,7 @@ In the last example, a placeholder is used to indicate, that the arguments are m
 - They must be evaluated in a following pass, if they involve the ~from all~ structure.
 - They must be evaluated at runtime, if they involve the ~where~ keyword, such that it depends on variables
   which are not constant and fully defined.
+  
 **** Set Creation
 | *op*        | *description*                                                                       | *requirement*       |
 |-------------+-------------------------------------------------------------------------------------+---------------------|
@@ -89,6 +113,7 @@ In the last example, a placeholder is used to indicate, that the arguments are m
 | ~a from b~  | all *objects* of type ~a~ in the set ~b~                                            | ~a~ is ident        |
 | ~a where b~ | all *objects* in the set ~a~ for which the boolean expression ~b~ evaluates to true | ~b~ is boolean expr |
 | ~last a~    | the *object*                                                                        |                     |
+
 **** Boolean set ops
 These work *on Types and on Objects*.
 | ~==~     | are sets euqual?                               |
@@ -97,12 +122,15 @@ These work *on Types and on Objects*.
 | ~a >= b~ | is ~b~ contained in ~a~?                       |
 | ~a < b~  | is ~a~ contained in ~b~, but not equal to ~b~? |
 | ~a <= b~ | is ~a~ contained in ~b~?                       |
+
 **** Mathematical set ops
 These work *only on Objects*.
+
 ***** Requirements
 - Identical memory layout (and identical base types).
 - No ~str~ or ~ident~ types.
 - No ~extern~ objects.
+  
 ***** Supported ops
 | *op*         | *description*                 | *requirement*               |
 |--------------+-------------------------------+-----------------------------|
@@ -129,14 +157,81 @@ These work *only on Objects*.
 - *Symbols do not belong to the object*, they are just helper variables.
 
 *** Syntax Sugar
+
 **** The ~expand~ Structure
-
+- Expand is similar to a C-like for loop in the sense that it used to compact repetitive statements,
+  but with the important difference that there is no guaranteed order for the execution of the "expanded" statements.
+  This is because instead of operating on a range with an iterator operation, ~expand~ operates on an unordered set.
+  Such a behaviour harmonizes well with parallel hardware and provides more freedom to HotGlue for choosing
+  the path of least resistance.
+- Use ~expand(ident: description: set) { statement }~ where ~set~ is a set of objects of ~description~,
+  such that ~set~ >= ~description~ and ~description~ <= ~set~. Since ~ident~ would then be *overdefined*, ~expand~
+  will pratically assign different versions of ~ident~ to different elements in ~set~ and generate statements from
+  ~statement~ for all versions of ~ident~.
+- A not completely defined ~ident~ object, would also be a valid set. Using ~req~ the set can be constrained without
+  sepcifying an explicit set. For example ~expand (t: u64 req t < 10000) { do_something(t)}~. Would iterate over
+  all integers in the range [0, 10000).
+  
 **** The ~using~ Keyword
+- Use ~using expression~ where expression contains ~_~ at least once, inside a scope, to replace all
+  identifiers that follow the ~using~ declaration with the expression where the identifier replaces ~_~.
+- If a using declaration follows a previous one, then the effect of the previous declaration will be terminated.
+  Therefore a using declaration can be limited to a certain space with ~using expression ident_a ident_b using _~.
 
+*** Importing other HotGlue files
+- Use ~include "source_file"~ to include the HotGlue objects in the global namespace However
+  you have to avoid name collisions to other HotGlue objects from other files.
+- Use ~ident: include "source_file"~ to include the HotGlue objects into their own namespace.
+  They would then be adessed as ~ident.object~.
 
-*** Getting Results
-**** The ~do~ Keyword
+*** Importing C, CUDA and OpenCL functions
+- Use ~extern include "source_file"~ to import external functions from the source file (.c, .cu, ...),
+  into the global name space.
+- Use ~ident: extern include "source_file"~ to import external functions into their own namespace.
+  The functions would then be adressed as ~ident.function_name~.
+
+*** Calling C, CUDA and OpenCL functions
+- Use ~fun_signifier function_name(args)(const_args)~ to call an external function.
+- There exist [[*Call Signifiers][3 signifiers]] which can be used inplace of ~fun_signifier~. The are:
+  | ~funC~    | call a C function    |
+  | ~funCUDA~ | call a CUDA kernel   |
+  | ~funOCL~  | call a OpenCL kernel |
+- ~function_name~ must match the name of the function in the source code.
+- ~args~ must be translatable to the functions native types. They are the true function arguments.
+  - All args are passed as pointers by default. Specify passing by value using ~$arg~.
+- ~const_args~, which is optional and can be excluded (parenthesis as well), are compile time constants,
+  which may be used by the function. They will be put in const memory or in preprocessor macros.
+  - Only objects with the signifier ~|~ will be selected form the ~const_args~ which are passed in.
+  - The case ~| a: { | b: c}~ will be treated as ~| a: { b: c}~. ~a~ would be stored as C struct,
+    such that ~b~ would be adressed as ~a.b~.
+- C functions "collapse" into their return values, if they return anything. This value can for example
+  be assigned to an appropriate object.
+  
+*** The ~trigger~ Keyword
+- Use ~trigger (expression) {procedure}~, where ~expression~ can be a either a boolean expression or a
+  an expression resulting in any value and ~procedure~ is a set of actions to be performed.
+- The ~procedure~ ([[*Procedures][Procedures]]) will be triggered, when the boolean expression *switches* to true, or when the
+  non boolean expression *changes it's value*.
+
+*** The ~do~ Keyword
 - Use ~do procedure~ to actually do what is described in the ~procedure~.
   HotGlue will figure out how to obtain the objects, which are used in the procedure.
 - Usually calls an external procedure, which takes over control.
 - The external procedure may terminate HotGlue, or change objects with the ~exw~ signifier.
+
+*** Base Types
+- The native types of HotGlue.
+| *type* | *as C-type*              | *as CUDA-type* | *as OpenCl-type* |
+|--------+--------------------------+----------------+------------------|
+| ~s8~   | ~signed char~            | <              | <                |
+| ~s16~  | ~signed short~           | <              | <                |
+| ~s32~  | ~int~                    | <              | <                |
+| ~s64~  | ~long long int~          | <              | <                |
+| ~u8~   | ~unsinged char~          | <              | <                |
+| ~u16~  | ~unsigned short~         | <              | <                |
+| ~u32~  | ~unsigned int~           | <              | <                |
+| ~u64~  | ~unsigned long long int~ | <              | <                |
+| ~f8~   | -                        | ~fp8~          | ?                |
+| ~f16~  | -                        | ~__half~       | ~half~           |
+| ~f32~  | ~float~                  | <              | <                |
+| ~f64~  | ~double~                 | <              | <                |
