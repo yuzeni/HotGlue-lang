@@ -1,19 +1,19 @@
 ** The HotGlue spec
 *** Objects
 **** Object Declaration
-- An object is declared using ~ident : description~, within any scope.
-- Applying multiple descriptions ~ident : descr_1 : descr_2 : ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
+- An object is declared using ~ident: description~, within any scope.
+- Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
   For example ~a: u32: 363~ is well defined and ~a: u32: u64~ won't compile.
   
 ***** Arrays
 - Declare an array using ~ident : description[x]~ where x > 0. x can be entirely excluded, to declare a
   one dimensional array of unspecified length.
-- Multidimensional arrays can be defined as well using ~ident : description[x][y]...~
+- Multidimensional arrays can be defined as well using ~ident: description[x][y]...~
 - An array is fully defined, once its size is known and it has either the ~extern~ signifier or concrete values.
   
 ***** Object Signifiers
 Put them in front of the identifier: ~signifier ident: description~.
-| ~$\vert{}$~    | The object will stay constant, once defined.                                           |
+| $\vert{}      | The object will stay constant, once defined.                                           |
 | ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.          |
 | ~exr~          | The object is accessable from inside HotGlue, but will be read externally.             |
 | ~exw~          | As above, but will be written to externally.                                           |
@@ -21,7 +21,7 @@ Put them in front of the identifier: ~signifier ident: description~.
 | ~exlayout AoS~ | As above, but the layout will be AoS.                                                  |
 
 ***** On Requirements
-- Pose requirements on the creation of objects using ~ident : description req requirement~.
+- Pose requirements on the creation of objects using ~ident: description req requirement~.
 - The object cannot be created if the ~requirement~ evaluates to ~false~.
   This can cause *runtime errors*, when a value of external origin is used somewhere.
 - ~requirement~ is still inside the scope of description, so ~this~ would evaluate to ~ident~.
@@ -33,16 +33,16 @@ Put them in front of the identifier: ~signifier ident: description~.
   For example ~Time: Time~ or the equivalent ~Time: this~.
   Note that any declaration, inside that scope, of the form ~ident: Time~ will now reference the ~Time: Time~ object.
   
-***** On the Description
+***** On the ~description~
 There are two types of objects, data objects and function objects.
-- *Declare a data objects* using ~ident : {x}~ where ~x~ is a set of object declarations.
-- *Declare a function object* using ~ident : (x){y}->{z}~ where ~x~ are the arguments to the function,
+- *Declare a data objects* using ~ident: {x}~ where ~x~ is a set of object declarations.
+- *Declare a function object* using ~ident: (x){y}->{z}~ where ~x~ are the arguments to the function,
   ~y~ is the procedure where the functionality is implemented and ~z~ is the set of objects which will be returned.
   
 ***** On Defined vs. Undefined
-****** When?
-- If any object inside it, is undefined.
-- If there are any variables either without concrete values or without the ~extern~ signifier.
+****** Undefined when:
+- Any object inside it, is undefined.
+- There are any variables either without concrete values or without the ~extern~ signifier.
 ****** Examples
 | ~a: s32~        | undefined |
 | ~b: s32: 345~   | defined   |
@@ -50,7 +50,7 @@ There are two types of objects, data objects and function objects.
 | ~extern d: f64~ | defined   |
 | ~e:(){}->{4}~   | defined   |
 | ~f:(_){}->{4}~  | undefined |
-In the last example, a *placeholder* is used to indicate, that the arguments are indeed missing.
+In the last example, a *placeholder* is used, to indicate that the arguments are indeed missing.
 
 **** Data Objects
 - Contains a set of data objects, function objects or unnamed self-activating procedures,
@@ -58,7 +58,7 @@ In the last example, a *placeholder* is used to indicate, that the arguments are
 - Everything inside the data object, must be *fully defined*.
   
 **** Function Objects
-~ident : (args) {procedure} -> {object}~
+~ident: (args) {procedure} -> {object}~
 - Function Objects return the Data Object defined in their ~->{}~ structure, if provided with the correct arguments,
   using ~funv_obj(param_1, param_2, ...)~.
 - Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~ ([[*Procedures][Procedures]]),
@@ -223,15 +223,15 @@ These work *only on Objects*.
 - The native types of HotGlue.
 | *type* | *as C-type*              | *as CUDA-type* | *as OpenCl-type* |
 |--------+--------------------------+----------------+------------------|
-| ~s8~   | ~signed char~            | <              | <                |
-| ~s16~  | ~signed short~           | <              | <                |
-| ~s32~  | ~int~                    | <              | <                |
-| ~s64~  | ~long long int~          | <              | <                |
-| ~u8~   | ~unsinged char~          | <              | <                |
-| ~u16~  | ~unsigned short~         | <              | <                |
-| ~u32~  | ~unsigned int~           | <              | <                |
-| ~u64~  | ~unsigned long long int~ | <              | <                |
+| ~s8~   | ~signed char~            | =              | =                |
+| ~s16~  | ~signed short~           | =              | =                |
+| ~s32~  | ~int~                    | =              | =                |
+| ~s64~  | ~long long int~          | =              | =                |
+| ~u8~   | ~unsinged char~          | =              | =                |
+| ~u16~  | ~unsigned short~         | =              | =                |
+| ~u32~  | ~unsigned int~           | =              | =                |
+| ~u64~  | ~unsigned long long int~ | =              | =                |
 | ~f8~   | -                        | ~fp8~          | ?                |
 | ~f16~  | -                        | ~__half~       | ~half~           |
-| ~f32~  | ~float~                  | <              | <                |
-| ~f64~  | ~double~                 | <              | <                |
+| ~f32~  | ~float~                  | =              | =                |
+| ~f64~  | ~double~                 | =              | =                |
