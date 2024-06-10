@@ -1,4 +1,4 @@
-this.hello
+
 // all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file
 
 my_c: extern include "src/my_c_functions.c"
@@ -21,7 +21,7 @@ exobj: {
 Time: u64 // in nanoseconds
 Second: u64: 10**9
 
-in_range: (x, a, b) -> { bool: x >= a && x <= b }
+in_range: (x, a, b) -> { bool: this: x >= a && x <= b }
 
 Image: u32[width, height]
 

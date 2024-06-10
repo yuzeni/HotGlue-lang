@@ -70,6 +70,7 @@ enum Token_enum : uint32_t {
     tkn_using,
     tkn_do,
     tkn_to,
+    tkn_include,
 
     /* mutliple char operators */
 

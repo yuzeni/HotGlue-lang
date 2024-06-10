@@ -114,6 +114,7 @@ const char *token_name_table[tkn_SIZE - 256]{
     "ident",
     "symbol",
     "this",
+    "all",
     // external business
     "extern",
     "exr",
@@ -125,7 +126,6 @@ const char *token_name_table[tkn_SIZE - 256]{
     "funCUDA",
     "fun_OCL",
     // set creation operations
-    "all",
     "from",
     "where",
     "first",
@@ -137,6 +137,7 @@ const char *token_name_table[tkn_SIZE - 256]{
     "using",
     "do",
     "to",
+    "include",
 
     /* mutliple char operators */
     "->",
@@ -220,6 +221,7 @@ Token_enum keyword_compare(const std::string_view sv)
     case cte_hash_c_str("using"): return tkn_using;
     case cte_hash_c_str("do"): return tkn_do;
     case cte_hash_c_str("to"): return tkn_to;
+    case cte_hash_c_str("include"): return tkn_include;
     default: return tkn_ident;
     }
 }

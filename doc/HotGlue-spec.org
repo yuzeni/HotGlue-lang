@@ -198,6 +198,7 @@ These work *only on Objects*.
 
 ** Calling C, CUDA and OpenCL functions
 - Use ~fun_signifier function_name(args)(const_args)~ to call an external function.
+  The external source, containing the function must be [[*Importing C, CUDA and OpenCL functions][importet]].
 - There exist [[*Call Signifiers][3 signifiers]] which can be used inplace of ~fun_signifier~. The are:
   | ~funC~    | call a C function    |
   | ~funCUDA~ | call a CUDA kernel   |
@@ -227,17 +228,17 @@ These work *only on Objects*.
 
 ** Base Types
 - The native types of HotGlue.
-| *type* | *as C-type*              | *as CUDA-type* | *as OpenCl-type* |
-|--------+--------------------------+----------------+------------------|
-| ~s8~   | ~signed char~            | =              | =                |
-| ~s16~  | ~signed short~           | =              | =                |
-| ~s32~  | ~int~                    | =              | =                |
-| ~s64~  | ~long long int~          | =              | =                |
-| ~u8~   | ~unsinged char~          | =              | =                |
-| ~u16~  | ~unsigned short~         | =              | =                |
-| ~u32~  | ~unsigned int~           | =              | =                |
-| ~u64~  | ~unsigned long long int~ | =              | =                |
-| ~f8~   | -                        | ~fp8~          | ?                |
-| ~f16~  | -                        | ~__half~       | ~half~           |
-| ~f32~  | ~float~                  | =              | =                |
-| ~f64~  | ~double~                 | =              | =                |
+| *HotGlue-type* | *as C-type*              | *as CUDA-type* | *as OpenCl-type* |
+|----------------+--------------------------+----------------+------------------|
+| ~s8~           | ~signed char~            | =              | =                |
+| ~s16~          | ~signed short~           | =              | =                |
+| ~s32~          | ~int~                    | =              | =                |
+| ~s64~          | ~long long int~          | =              | =                |
+| ~u8~           | ~unsinged char~          | =              | =                |
+| ~u16~          | ~unsigned short~         | =              | =                |
+| ~u32~          | ~unsigned int~           | =              | =                |
+| ~u64~          | ~unsigned long long int~ | =              | =                |
+| ~f8~           | -                        | ~fp8~          | ?                |
+| ~f16~          | -                        | ~__half~       | ~half~           |
+| ~f32~          | ~float~                  | =              | =                |
+| ~f64~          | ~double~                 | =              | =                |
