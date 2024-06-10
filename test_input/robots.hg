@@ -80,7 +80,7 @@ Rasterizer: (t: symbol
              Render_buffer:this req this.Time == t)
 {
     funCUDA rasterize_triangles(Mesh, Render_buffer)
-} -> {Render_buffer <- Mesh\this}
+} -> {Render_buffer}
 
 
 Constraint: {

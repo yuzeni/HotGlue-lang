@@ -15,15 +15,20 @@ enum Token_enum : uint32_t {
     tkn_none,
     tkn_global_scope,
     tkn_parse_error,
-    tkn_ident,
-    tkn_placeholder,
+    
+    /* literals */
 
-    // literals
+    tkn_ident,
     tkn_int,
     tkn_real,
     tkn_string,
+    tkn_true,
+    tkn_false,
+    tkn_placeholder,
 
-    // keywords
+    /* keywords */
+
+    // base types
     tkn_s8,
     tkn_s16,
     tkn_s32,
@@ -38,34 +43,37 @@ enum Token_enum : uint32_t {
     tkn_f64,
     tkn_str,
     tkn_bool,
-    tkn_true,
-    tkn_false,
+    tkn_ident_type,
+    tkn_symbol,
+    tkn_this,
+    tkn_all,
+
+    // external business
     tkn_extern,
     tkn_exread,
     tkn_exwrite,
     tkn_exlayout,
     tkn_AoS,
     tkn_SoA,
-    tkn_all,
+    tkn_funC,
+    tkn_funCUDA,
+    tkn_fun_OCL,
+    // set creation operations
+    tkn_from,
+    tkn_where,
     tkn_first,
     tkn_last,
-    tkn_where,
-    tkn_not,
+    // miscellaneous
     tkn_req,
-    tkn_else,
-    tkn_from_decl,
     tkn_expa,
     tkn_trigger,
     tkn_using,
     tkn_do,
-    tkn_this,
+    tkn_to,
 
-    // operators
-    tkn_func, // :>
-    tkn_to_imp,
-    tkn_not_to,    // !<- !->
-    tkn_func_body, // ::
+    /* mutliple char operators */
 
+    tkn_return,
     tkn_update_add,
     tkn_update_sub,
     tkn_update_mul,

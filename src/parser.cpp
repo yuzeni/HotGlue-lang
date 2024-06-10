@@ -30,51 +30,51 @@
       [[maybe_unused]] Ast &ast, [[maybe_unused]] Ast_node *left,              \
       [[maybe_unused]] Ast_node *super
 
-Ast_node *nud_left(NUD_ARGS);
-Ast_node *nud_right(NUD_ARGS);
-Ast_node *nud_arg(NUD_ARGS);
-Ast_node *nud_this(NUD_ARGS);
-// Ast_node *nud_ident(NUD_ARGS);
-Ast_node *nud_bracket(NUD_ARGS);
-Ast_node *nud_set_op(NUD_ARGS); // used by: all, first
-Ast_node *nud_error(NUD_ARGS);
-Ast_node *nud_delimiter(NUD_ARGS);
+static Ast_node *nud_left(NUD_ARGS);
+static Ast_node *nud_right(NUD_ARGS);
+static Ast_node *nud_arg(NUD_ARGS);
+static Ast_node *nud_this(NUD_ARGS);
+// static Ast_node *nud_ident(NUD_ARGS);
+static Ast_node *nud_bracket(NUD_ARGS);
+static Ast_node *nud_set_op(NUD_ARGS); // used by: all, first
+static Ast_node *nud_error(NUD_ARGS);
+static Ast_node *nud_delimiter(NUD_ARGS);
 
-Ast_node *nud_not(NUD_ARGS);
-Ast_node *nud_increment(NUD_ARGS);
-Ast_node *nud_decrement(NUD_ARGS);
-Ast_node *nud_ident_flag(NUD_ARGS);
+static Ast_node *nud_not(NUD_ARGS);
+static Ast_node *nud_increment(NUD_ARGS);
+static Ast_node *nud_decrement(NUD_ARGS);
+static Ast_node *nud_ident_flag(NUD_ARGS);
 
-Ast_node *led_normal(LED_ARGS);
-Ast_node *led_parenthesis(LED_ARGS);
-Ast_node *led_bracket(LED_ARGS);
-Ast_node *led_declare(LED_ARGS);
-Ast_node *led_dot(LED_ARGS);
-Ast_node *led_error(LED_ARGS);
+static Ast_node *led_normal(LED_ARGS);
+static Ast_node *led_parenthesis(LED_ARGS);
+static Ast_node *led_bracket(LED_ARGS);
+static Ast_node *led_declare(LED_ARGS);
+static Ast_node *led_dot(LED_ARGS);
+static Ast_node *led_error(LED_ARGS);
 
-Ast_node *led_to_imp(LED_ARGS);
-Ast_node *led_not_to (LED_ARGS);
-Ast_node *led_func_body(LED_ARGS);
-Ast_node *led_set_eq(LED_ARGS);
-Ast_node *led_update_add(LED_ARGS);
-Ast_node *led_update_sub(LED_ARGS);
-Ast_node *led_update_mul(LED_ARGS);
-Ast_node *led_update_div(LED_ARGS);
+static Ast_node *led_to_imp(LED_ARGS);
+static Ast_node *led_not_to (LED_ARGS);
+static Ast_node *led_func_body(LED_ARGS);
+static Ast_node *led_set_eq(LED_ARGS);
+static Ast_node *led_update_add(LED_ARGS);
+static Ast_node *led_update_sub(LED_ARGS);
+static Ast_node *led_update_mul(LED_ARGS);
+static Ast_node *led_update_div(LED_ARGS);
 
-Ast_node *led_or(LED_ARGS);
-Ast_node *led_and(LED_ARGS);
-Ast_node *led_eq(LED_ARGS);
-Ast_node *led_neq(LED_ARGS);
-Ast_node *led_less(LED_ARGS);
-Ast_node *led_greater(LED_ARGS);
-Ast_node *led_less_eq(LED_ARGS);
-Ast_node *led_greater_eq(LED_ARGS);
-Ast_node *led_add(LED_ARGS);
-Ast_node *led_sub(LED_ARGS);
-Ast_node *led_mul(LED_ARGS);
-Ast_node *led_div(LED_ARGS);
-Ast_node *led_modulo(LED_ARGS);
-Ast_node *led_pow(LED_ARGS);
+static Ast_node *led_or(LED_ARGS);
+static Ast_node *led_and(LED_ARGS);
+static Ast_node *led_eq(LED_ARGS);
+static Ast_node *led_neq(LED_ARGS);
+static Ast_node *led_less(LED_ARGS);
+static Ast_node *led_greater(LED_ARGS);
+static Ast_node *led_less_eq(LED_ARGS);
+static Ast_node *led_greater_eq(LED_ARGS);
+static Ast_node *led_add(LED_ARGS);
+static Ast_node *led_sub(LED_ARGS);
+static Ast_node *led_mul(LED_ARGS);
+static Ast_node *led_div(LED_ARGS);
+static Ast_node *led_modulo(LED_ARGS);
+static Ast_node *led_pow(LED_ARGS);
 
 struct Semantic_code {
     int lbp = 0; // left-binding-power
@@ -91,15 +91,17 @@ consteval std::array<Semantic_code, tkn_SIZE> get_op_semantics_table()
     std::array<Semantic_code, tkn_SIZE> table;
     
     table.fill({});
-    
+
+    /* literals */
     table[tkn_ident]       = {0, 0, nud_arg};
     table[tkn_int]         = {0, 0, nud_arg};
     table[tkn_real]        = {0, 0, nud_arg};
     table[tkn_string]      = {0, 0, nud_arg};
-    table[tkn_str]         = {0, 0, nud_arg};
-    table[tkn_bool]        = {0, 0, nud_arg};
     table[tkn_true]        = {0, 0, nud_arg};
     table[tkn_false]       = {0, 0, nud_arg};
+    table[tkn_placeholder] = {0, 0, nud_arg};
+
+    /* base types */
     table[tkn_s8]          = {0, 0, nud_arg};
     table[tkn_s16]         = {0, 0, nud_arg};
     table[tkn_s32]         = {0, 0, nud_arg};
@@ -112,67 +114,75 @@ consteval std::array<Semantic_code, tkn_SIZE> get_op_semantics_table()
     table[tkn_f16]         = {0, 0, nud_arg};
     table[tkn_f32]         = {0, 0, nud_arg};
     table[tkn_f64]         = {0, 0, nud_arg};
-    table[tkn_placeholder] = {0, 0, nud_arg};
-    table[tkn_this]        = {0, 0, nud_this};
+    table[tkn_str]         = {0, 0, nud_arg};
+    table[tkn_bool]        = {0, 0, nud_arg};
+    table[tkn_ident_type]  = {0, 0, nud_arg};
+    table[tkn_symbol]      = {0, 0, nud_arg};
+    table[tkn_this]        = {0, 0, nud_arg};//nud_this};
+    table[tkn_all]         = {0, 0, nud_set_op};
 
+    /* structure */
     table[tkn_do]          = {1, 1, nud_error, led_normal};
     table[tkn_expa]        = {2, 2, nud_error, led_normal};
-    table[tkn_using]       = {2, 2, nud_right};
-    table[':']             = {3, 3, nud_error, led_declare};
-    table[tkn_func]        = {3, 3, nud_error, led_normal};
+    table[tkn_trigger]     = {2, 2, nud_error, led_normal};
+    table[tkn_using]       = {0, 2, nud_right};
+    table[':']             = {3, 3, nud_error, led_normal};//led_declare};
+    table[tkn_return]      = {3, 3, nud_error, led_normal};
     table[tkn_req]         = {4, 4, nud_error, led_normal};
-    table[tkn_else]        = {5, 5, nud_error, led_normal};
-    table[tkn_trigger]     = {6, 6, nud_error, led_normal};
+    table[tkn_to]          = {5, 5, nud_error, led_normal};//led_to_imp};
 
-    table[tkn_to_imp]      = {6, 6, nud_error, led_to_imp};
-    table[tkn_not_to]      = {6, 6, nud_error, led_not_to };
-    table[tkn_func_body]   = {6, 6, nud_error, led_func_body};
-    table['=']             = {7, 7, nud_error, led_set_eq};
-    table[tkn_update_add]  = {7, 7, nud_error, led_update_add};
-    table[tkn_update_sub]  = {7, 7, nud_error, led_update_sub};
-    table[tkn_update_mul]  = {7, 7, nud_error, led_update_mul};
-    table[tkn_update_div]  = {7, 7, nud_error, led_update_div};
-    table[tkn_increment]   = {7, 7, nud_increment};
-    table[tkn_decrement]   = {7, 7, nud_decrement};
-
-    table[tkn_or]          = {8, 8, nud_error, led_or};
-    table[tkn_and]         = {9, 9, nud_error, led_and};
-    table[tkn_eq]          = {10, 10, nud_error, led_eq};
-    table[tkn_neq]         = {10, 10, nud_error, led_neq};
-    table['<']             = {10, 10, nud_error, led_less};
-    table['>']             = {10, 10, nud_error, led_greater};
-    table[tkn_less_eq]     = {10, 10, nud_error, led_less_eq};
-    table[tkn_greater_eq]  = {10, 10, nud_error, led_greater_eq};
-    table['+']             = {11, 11, nud_right, led_add};
-    table['-']             = {11, 11, nud_right, led_sub};
-    table['*']             = {12, 12, nud_error, led_mul};
-    table['/']             = {12, 12, nud_error, led_div};
-    table['%']             = {12, 12, nud_error, led_modulo};
-    table[tkn_pow]         = {14, 13, nud_error, led_pow};
-    table['!']             = {15, 15, nud_not};
+    /* set operations */
+    table['=']             = {6, 6, nud_error, led_normal};//led_set_eq};
+    table[tkn_update_add]  = {6, 6, nud_error, led_normal};//led_update_add};
+    table[tkn_update_sub]  = {6, 6, nud_error, led_normal};//led_update_sub};
+    table[tkn_update_mul]  = {6, 6, nud_error, led_normal};//led_update_mul};
+    table[tkn_update_div]  = {6, 6, nud_error, led_normal};//led_update_div};
+    table[tkn_increment]   = {6, 0, nud_left};//nud_increment};
+    table[tkn_decrement]   = {6, 0, nud_left};//nud_decrement};
     
-    table[tkn_all]         = {16, 16, nud_set_op};
-    table[tkn_last]        = {17, 17, nud_right};
-    table[tkn_first]       = {17, 17, nud_set_op};
-    table[tkn_from_decl]   = {18, 17, nud_error, led_normal};
-     			      	    
-    table['.']             = {19, 19, nud_error, led_dot};
-    table['\\']            = {19, 19, nud_error, led_normal};
-    table['|']             = {0, 20, nud_ident_flag};
-    table[tkn_extern]      = {0, 20, nud_ident_flag};
-    table[tkn_exread]      = {0, 20, nud_ident_flag};
-    table[tkn_exwrite]     = {0, 20, nud_ident_flag};
-    table[tkn_exlayout]    = {0, 20, nud_ident_flag};
-    table[tkn_AoS]         = {0, 21, nud_ident_flag}; // require exlaout be the super
-    table[tkn_SoA]         = {0, 21, nud_ident_flag}; // require exlaout be the super
- 			      	    
-    table['(']             = {18, 0, nud_bracket, led_parenthesis};
-    table['[']             = {18, 0, nud_bracket, led_bracket};
-    table['{']             = {18, 0, nud_bracket};
+    table[tkn_or]          = {7, 7, nud_error, led_normal};//led_or};
+    table[tkn_and]         = {8, 8, nud_error, led_normal};//led_and};
+    table[tkn_eq]          = {9, 9, nud_error, led_normal};//led_eq};
+    table[tkn_neq]         = {9, 9, nud_error, led_normal};//led_neq};
+    table['<']             = {9, 9, nud_error, led_normal};//led_less};
+    table['>']             = {9, 9, nud_error, led_normal};//led_greater};
+    table[tkn_less_eq]     = {9, 9, nud_error, led_normal};//led_less_eq};
+    table[tkn_greater_eq]  = {9, 9, nud_error, led_normal};//led_greater_eq};
+    table['+']             = {10, 10, nud_right, led_normal};//led_add};
+    table['-']             = {10, 10, nud_right, led_normal};//led_sub};
+    table['*']             = {11, 11, nud_error, led_normal};//led_mul};
+    table['/']             = {11, 11, nud_error, led_normal};//led_div};
+    table['%']             = {11, 11, nud_error, led_normal};//led_modulo};
+    table[tkn_pow]         = {13, 12, nud_error, led_normal};//led_pow};
+    table['!']             = {0, 14, nud_right};//nud_not};
+
+    /* set creation operations */
+    table[tkn_first]       = {0, 14, nud_set_op};
+    table[tkn_last]        = {0, 14, nud_right};
+    table[tkn_from]        = {15, 14, nud_error, led_normal};
+    table[tkn_where]       = {15, 14, nud_error, led_normal};
+
+    /* grouping */
+    table['(']             = {15, 0, nud_bracket, led_parenthesis};
+    table['[']             = {15, 0, nud_bracket, led_bracket};
+    table['{']             = {15, 0, nud_bracket};
     table[')']             = {0, 0, nud_delimiter};
     table[']']             = {0, 0, nud_delimiter};
     table['}']             = {0, 0, nud_delimiter};
     table[',']             = {0, 0, nud_delimiter};
+
+    /* very tight set creation operations */
+    table['.']             = {16, 16, nud_error, led_dot};
+    table['\\']            = {16, 16, nud_error, led_normal};
+
+    /* signifiers */
+    table['|']             = {0, 17, nud_right};//nud_ident_flag};
+    table[tkn_extern]      = {0, 17, nud_right};//nud_ident_flag};
+    table[tkn_exread]      = {0, 17, nud_right};//nud_ident_flag};
+    table[tkn_exwrite]     = {0, 17, nud_right};//nud_ident_flag};
+    table[tkn_exlayout]    = {0, 17, nud_right};//nud_ident_flag};
+    table[tkn_AoS]         = {0, 18, nud_right};//nud_ident_flag}; // require exlaout be the super
+    table[tkn_SoA]         = {0, 18, nud_right};//nud_ident_flag}; // require exlaout be the super
     
     return table;
 }
@@ -226,7 +236,7 @@ Ast_node *parse_expression(Lexer &lexer, Ast &ast, Ast_node *super, int rbp = 0)
     return left;
 }
 
-bool is_base_type(Token_enum t)
+static bool is_base_type(Token_enum t)
 {
     return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64 ||
 	t == tkn_u8 || t == tkn_u16 || t == tkn_u32 || t == tkn_u64 ||
@@ -234,19 +244,19 @@ bool is_base_type(Token_enum t)
 	t == tkn_str || t == tkn_bool;
 }
 
-bool is_numeric_type(Token_enum t)
+static bool is_numeric_type(Token_enum t)
 {
     return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64 ||
 	t == tkn_u8 || t == tkn_u16 || t == tkn_u32 || t == tkn_u64 ||
 	t == tkn_f8 || t == tkn_f16 || t == tkn_f32 || t == tkn_f64;
 }
 
-bool is_sint_type(Token_enum t)
+static bool is_sint_type(Token_enum t)
 {
     return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64;
 }
 
-bool add_single_sub(Ast_node *node, Ast_node *sub)
+static bool add_single_sub(Ast_node *node, Ast_node *sub)
 {
     if(node && sub) {
 	node->sub = sub;
@@ -257,7 +267,7 @@ bool add_single_sub(Ast_node *node, Ast_node *sub)
 }
 
 // NOTE: automatically updates prev_sub
-bool add_alternative_sub(Ast_node *node, Ast_node **prev_sub, Ast_node *alt_sub)
+static bool add_alternative_sub(Ast_node *node, Ast_node **prev_sub, Ast_node *alt_sub)
 {
     if(prev_sub && *prev_sub && alt_sub && node) {
 	(*prev_sub)->alt_sub = alt_sub;
@@ -268,7 +278,7 @@ bool add_alternative_sub(Ast_node *node, Ast_node **prev_sub, Ast_node *alt_sub)
     return false;
 }
 
-bool add_alternative_sub(Ast_node *node, Ast_node *prev_sub, Ast_node *alt_sub)
+static bool add_alternative_sub(Ast_node *node, Ast_node *prev_sub, Ast_node *alt_sub)
 {
     if(prev_sub && alt_sub && node) {
 	prev_sub->alt_sub = alt_sub;
@@ -278,7 +288,34 @@ bool add_alternative_sub(Ast_node *node, Ast_node *prev_sub, Ast_node *alt_sub)
     return false;
 }
 
-Ast_node *nud_error(NUD_ARGS)
+static bool add_right_unary(Token_enum tkn_type, Ast_node* node, Lexer& lexer, Ast& ast)
+{
+    if(!(lexer.not_eof() && add_single_sub(node, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp)))) {
+	lexer.parsing_error(node->tkn, "Missing right argument for unary operator '%s'.", get_token_name_str(tkn_type).c_str());
+	return false;
+    }
+    return true;
+}
+
+static bool add_right_binary(Token_enum tkn_type, Ast_node* node, Lexer& lexer, Ast& ast)
+{
+    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp)))) {
+	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+    	return false;
+    }
+    return true;
+}
+
+static bool add_next_sub(Token_enum tkn_type, Ast_node* node, Ast_node** prev_sub, Lexer& lexer, Ast& ast)
+{
+    if(!(lexer.not_eof() && add_alternative_sub(node, prev_sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp)))) {
+	lexer.parsing_error(lexer.tkn_at(0), "Missing statemenet after '%s'.");
+	return false;
+    }
+    return true;
+}
+
+static Ast_node *nud_error(NUD_ARGS)
 {
     lexer.parsing_error(lexer.tkn_at(0), "The token '%s' has no unary method.", get_token_name_str(tkn_type).c_str());
     Semantic_code tkn_sema = op_semantics_table[tkn_type];
@@ -289,13 +326,13 @@ Ast_node *nud_error(NUD_ARGS)
     return nullptr;
 }
 
-Ast_node *nud_delimiter(NUD_ARGS)
+static Ast_node *nud_delimiter(NUD_ARGS)
 {
     lexer.next_token();
     return nullptr;
 }
 
-Ast_node *nud_left(NUD_ARGS)
+static Ast_node *nud_left(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
@@ -303,38 +340,28 @@ Ast_node *nud_left(NUD_ARGS)
     return node;
 }
 
-Ast_node *nud_right(NUD_ARGS)
+static Ast_node *nud_right(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
-    // get the right node
-    if(!(lexer.not_eof() && add_single_sub(node, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp))))
-	lexer.parsing_error(node->tkn, "Missing right argument for unary-right operator '%s'.", get_token_name_str(tkn_type).c_str());
+    add_right_unary(tkn_type, node, lexer, ast);
     return node;
 }
 
-Ast_node *nud_arg(NUD_ARGS)
+static Ast_node *nud_arg(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
     return node;
 }
 
-Ast_node *nud_this(NUD_ARGS)
+static Ast_node *nud_this(NUD_ARGS)
 {
     Ast_node* node = nud_arg(tkn_type, lexer, ast, left, super);
     node->tkn.type = tkn_ident;
     node->tkn.sv = g_scope_info.scope_ident->tkn.sv;
     return node;
 }
-
-// Ast_node *nud_ident(NUD_ARGS)
-// {
-//     Ast_node* node = nud_arg(tkn_type, lexer, ast, left, super);
-//     node->id = ast.find_or_add_ident(node, g_scope_info.scope_hash);
-//     HG_DEB_assert(node->id != 0, "ident id is 0 when it should be defined");
-//     return node;
-// }
 
 Token_enum bracket_opposite(Token_enum tkn_type)
 {
@@ -350,7 +377,7 @@ Token_enum bracket_opposite(Token_enum tkn_type)
     return tkn_parse_error;
 }
 
-Ast_node *nud_bracket(NUD_ARGS)
+static Ast_node *nud_bracket(NUD_ARGS)
 {
     HG_DEB_assert(is_open_bracket(tkn_type), "token type must be a bracket in nud_bracket");
     Ast_node* bracket = nullptr;
@@ -373,19 +400,17 @@ Ast_node *nud_bracket(NUD_ARGS)
     return bracket;
 }
 
-Ast_node *nud_set_op(NUD_ARGS)
+static Ast_node *nud_set_op(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
     // TODO: make more sophisticated when necessary
-    if(!is_binary_set_op(super->tkn.type)) {
-	if(!(lexer.not_eof() && add_single_sub(node, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp))))
-	    lexer.parsing_error(node->tkn, "Missing right argument for '%s'.", get_token_name_str(tkn_type).c_str());
-    }
+    if(!is_binary_set_op(super->tkn.type))
+	add_right_unary(tkn_type, node, lexer, ast);
     return node;
 }
 
-Ast_node *led_error(LED_ARGS)
+static Ast_node *led_error(LED_ARGS)
 {
     lexer.parsing_error(lexer.tkn_at(0), "The token '%s' has no binary method.", get_token_name_str(tkn_type).c_str());
     Semantic_code tkn_sema = op_semantics_table[tkn_type];
@@ -396,51 +421,38 @@ Ast_node *led_error(LED_ARGS)
     return nullptr;
 }
 
-Ast_node *led_normal(LED_ARGS)
+
+static Ast_node *led_normal(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
-    
     lexer.next_token();
-    // adding right
-    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp))))
-	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+    add_right_binary(tkn_type, node, lexer, ast);
     return node;
 }
 
-Ast_node *led_req(LED_ARGS)
+static Ast_node *led_req(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
-    
     lexer.next_token();
-    
-    Ast_node* prev_sub = node->sub;
-    if(lexer.not_eof()) {
-	add_alternative_sub(node, &prev_sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp));
-	if(lexer.tkn_at(0).type == tkn_else) // optional 'else' argument
-	    add_alternative_sub(node, &prev_sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp));
-    }
-    else {
-	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
-    }
+    add_right_binary(tkn_type, node, lexer, ast);
     return node;
 }
 
-Ast_node *led_trigger(LED_ARGS)
+static Ast_node *led_trigger(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
     lexer.next_token();
-    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp)))) // add right sub
-	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+    add_right_binary(tkn_type, node, lexer, ast);
     return node;
 }
 
 // TODO: enhance this funciton such that it catches all nodes, which can call a function
 static bool is_func_call(Ast_node *node) { return node->tkn.type == tkn_ident; }
 
-Ast_node *led_parenthesis(LED_ARGS)
+static Ast_node *led_parenthesis(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
@@ -458,7 +470,7 @@ static bool is_type(Ast_node *node)
     return node->tkn.type == tkn_ident || is_base_type(node->tkn.type);
 }
 
-Ast_node *led_bracket(LED_ARGS)
+static Ast_node *led_bracket(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
@@ -471,17 +483,16 @@ Ast_node *led_bracket(LED_ARGS)
 }
 
 // declarations open new scopes
-Ast_node *led_declare(LED_ARGS)
+static Ast_node *led_declare(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
-    add_single_sub(node, left);
-
-    Scope_info enclosing_scope = g_scope_info.next_scope(left, hash_string_view(left->tkn.sv, g_scope_info.scope_hash));
-    
     lexer.next_token();
-    // adding right
-    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp))))
-	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+    
+    add_single_sub(node, left);
+    
+    Scope_info enclosing_scope = g_scope_info.next_scope(left, hash_string_view(left->tkn.sv, g_scope_info.scope_hash));
+        
+    add_right_binary(tkn_type, node, lexer, ast);
     
     Ast_node* right = node->sub->alt_sub;
     Ast_node* prev_sub = right;
@@ -513,10 +524,8 @@ Ast_node *led_declare(LED_ARGS)
     while(lexer.tkn_at(0).type == ':') {
 	lexer.next_token();
 	// add the next declaration
-	if(!(lexer.not_eof() && add_alternative_sub(node, &prev_sub, parse_expression(lexer, ast, node, op_semantics_table[Token_enum(':')].rbp)))) {
-	    lexer.parsing_error(lexer.tkn_at(0), "Missing declaration statemenet after ':'.");
+	if(!add_next_sub(Token_enum(':'), node, &prev_sub, lexer, ast))
 	    goto end;
-	}
     }
 
 end:
@@ -524,34 +533,35 @@ end:
     return node;
 }
 
-Ast_node *led_dot(LED_ARGS)
+static Ast_node *led_dot(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
+    lexer.next_token();
+
     add_single_sub(node, left);
     
     if(!is_reference_tkn(left->tkn.type)) {
 	lexer.parsing_error(left->tkn, "Expected an identifier, 'this' or a placeholder, but got '%s'.", get_token_name_str(left->tkn.type).c_str());
+	std::cout << get_token_name_str(node->tkn.type) << '\n';
 	return node;
     }
 
     Scope_info enclosing_scope = g_scope_info.next_scope(left, hash_string_view(left->tkn.sv, g_scope_info.scope_hash));
-    
-    // adding right
-    lexer.next_token();
-    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, ast, node, op_semantics_table[tkn_type].rbp))))
-	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+
+    add_right_binary(tkn_type, node, lexer, ast);
 
     g_scope_info.restore_scope(enclosing_scope);
     return node;
 }
 
 // NOTE: left can be a set or identifer
-Ast_node *led_to_decl(LED_ARGS)
+static Ast_node *led_to_decl(LED_ARGS)
 {
     Ast_node* node = led_normal(tkn_type, lexer, ast, left, super);
     if(left->tkn.type == tkn_ident) {
 	uint64_t left_id = ast.find_ident(left, g_scope_info.scope_hash);
-	if(!left_id) {	    lexer.parsing_error(left->tkn, "This object is not in scope.");
+	if(!left_id) {
+	    lexer.parsing_error(left->tkn, "This object is not in scope.");
 	    return node;
 	}
 	left->id = left_id;
@@ -560,12 +570,36 @@ Ast_node *led_to_decl(LED_ARGS)
     return node;
 }
 
-bool tkn_legal_in_global_space(Token_enum type)
+// static Ast_node *led_to_imp(LED_ARGS);
+// static Ast_node *led_not_to (LED_ARGS);
+// static Ast_node *led_func_body(LED_ARGS);
+// static Ast_node *led_set_eq(LED_ARGS);
+// static Ast_node *led_update_add(LED_ARGS);
+// static Ast_node *led_update_sub(LED_ARGS);
+// static Ast_node *led_update_mul(LED_ARGS);
+// static Ast_node *led_update_div(LED_ARGS);
+
+// static Ast_node *led_or(LED_ARGS);
+// static Ast_node *led_and(LED_ARGS);
+// static Ast_node *led_eq(LED_ARGS);
+// static Ast_node *led_neq(LED_ARGS);
+// static Ast_node *led_less(LED_ARGS);
+// static Ast_node *led_greater(LED_ARGS);
+// static Ast_node *led_less_eq(LED_ARGS);
+// static Ast_node *led_greater_eq(LED_ARGS);
+// static Ast_node *led_add(LED_ARGS);
+// static Ast_node *led_sub(LED_ARGS);
+// static Ast_node *led_mul(LED_ARGS);
+// static Ast_node *led_div(LED_ARGS);
+// static Ast_node *led_modulo(LED_ARGS);
+// static Ast_node *led_pow(LED_ARGS); 
+
+static bool tkn_legal_in_global_space(Token_enum type)
 {
-    return type == ':' || type == tkn_func || type == tkn_do;
+    return type == ':' || type == tkn_do;
 }
 
-void build_ast(Lexer &lexer, Ast &ast)
+static void build_ast(Lexer &lexer, Ast &ast)
 {
     g_scope_info = Scope_info{};
     lexer.next_token();
@@ -598,7 +632,7 @@ void build_ast(Lexer &lexer, Ast &ast)
     }
 }
 
-void parse_latest(Lexer &lexer, Ast &ast)
+static void parse_latest(Lexer &lexer, Ast &ast)
 {
     build_ast(lexer, ast);
     if(lexer.parsing_error_cnt)

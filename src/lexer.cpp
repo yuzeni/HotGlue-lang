@@ -83,15 +83,20 @@ const char *token_name_table[tkn_SIZE - 256]{
     "none",
     "global_scope",
     "parse_error",
-    "ident",
-    "placeholder",
-
-    // literals
+    
+    /* literals */
+    
+    "identifier",
     "int",
     "real",
     "string",
+    "true",
+    "false",
+    "placeholder",
 
-    // keywords
+    /* keywords */
+    
+    // base types
     "s8",
     "s16",
     "s32",
@@ -106,33 +111,35 @@ const char *token_name_table[tkn_SIZE - 256]{
     "f64",
     "str",
     "bool",
-    "true",
-    "false",
+    "ident",
+    "symbol",
+    "this",
+    // external business
     "extern",
     "exr",
     "exw",
     "exlayout",
     "AoS",
     "SoA",
+    "funC",
+    "funCUDA",
+    "fun_OCL",
+    // set creation operations
     "all",
+    "from",
+    "where",
     "first",
     "last",
-    "where",
-    "not",
+    // miscellaneous
     "req",
-    "else",
-    "from",
     "expa",
     "trigger",
     "using",
     "do",
-    "this",
+    "to",
 
-    // operators
-    ":>",
+    /* mutliple char operators */
     "->",
-    "!->",
-    "::",
     "+=",
     "-=",
     "*=",
@@ -175,7 +182,6 @@ Token_enum keyword_compare(const std::string_view sv)
     if (sv.size() > 8)
 	return tkn_ident;
 
-    // NOTE: hash_string_view and hash_c_str share the same algorithm
     switch(hash_string_view(sv)) {
     case cte_hash_c_str("s8"): return tkn_s8;
     case cte_hash_c_str("s16"): return tkn_s16;
@@ -191,27 +197,29 @@ Token_enum keyword_compare(const std::string_view sv)
     case cte_hash_c_str("f64"): return tkn_f64;
     case cte_hash_c_str("str"): return tkn_str;
     case cte_hash_c_str("bool"): return tkn_bool;
-    case cte_hash_c_str("true"): return tkn_true;
-    case cte_hash_c_str("false"): return tkn_false;
+    case cte_hash_c_str("ident"): return tkn_ident_type;
+    case cte_hash_c_str("symbol"): return tkn_symbol;
+    case cte_hash_c_str("this"): return tkn_this;
     case cte_hash_c_str("extern"): return tkn_extern;
     case cte_hash_c_str("exr"): return tkn_exread;
     case cte_hash_c_str("exw"): return tkn_exwrite;
     case cte_hash_c_str("exlayout"): return tkn_exlayout;
     case cte_hash_c_str("AoS"): return tkn_AoS;
     case cte_hash_c_str("SoA"): return tkn_SoA;
+    case cte_hash_c_str("funC"): return tkn_funC;
+    case cte_hash_c_str("funCUDA"): return tkn_funCUDA;
+    case cte_hash_c_str("fun_OCL"): return tkn_fun_OCL;
     case cte_hash_c_str("all"): return tkn_all;
+    case cte_hash_c_str("from"): return tkn_from;
+    case cte_hash_c_str("where"): return tkn_where;
     case cte_hash_c_str("first"): return tkn_first;
     case cte_hash_c_str("last"): return tkn_last;
-    case cte_hash_c_str("where"): return tkn_where;
-    case cte_hash_c_str("not"): return tkn_not;
     case cte_hash_c_str("req"): return tkn_req;
-    case cte_hash_c_str("else"): return tkn_else;
-    case cte_hash_c_str("from"): return tkn_from_decl;
     case cte_hash_c_str("expa"): return tkn_expa;
     case cte_hash_c_str("trigger"): return tkn_trigger;
     case cte_hash_c_str("using"): return tkn_using;
     case cte_hash_c_str("do"): return tkn_do;
-    case cte_hash_c_str("this"): return tkn_this;
+    case cte_hash_c_str("to"): return tkn_to;
     default: return tkn_ident;
     }
 }
@@ -443,7 +451,7 @@ bool Lexer::push_next_token()
     }
 
     // check for operators
-    for(uint32_t i = tkn_func; i <= tkn_greater_eq; ++i) {
+    for(uint32_t i = tkn_return; i <= tkn_greater_eq; ++i) {
 	auto opt_tkn = check_for_operator(&p, eof, Token_enum(i), get_mul_char_token_name(Token_enum(i)));
 	if(opt_tkn)
 	    return tkns.push(opt_tkn.value());

@@ -1,4 +1,4 @@
-
+this.hello
 // all req exists hgfile "robots.hg" // requirement for interpretation of all objects in the file
 
 my_c: extern include "src/my_c_functions.c"
