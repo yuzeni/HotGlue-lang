@@ -1,15 +1,3 @@
-// TODO-LIST:
-// TODO: handle use of 'first' in cases .first and \first
-
-// This parser is based on the Pratt/TDOP parser. With the slight modification
-// of explicit righ-biding-power alongside the usually sufficient
-// left-biding-power. The following sources were helpful guides:
-// -  https://tdop.github.io/
-// -  https://www.oilshell.org/blog/2016/11/01.html
-
-// on error handling:
-// -  Every led and nud is responsible only for the validity of its subs.
-
 #include "parser.hpp"
 
 #include <array>
@@ -18,22 +6,29 @@
 #include "lexer.hpp"
 #include "ast.hpp"
 
-#include "semantics_table.hpp"
+#include "semantics.hpp"
 
-#include "type_checker.hpp"
 #include "log_and_debug.hpp"
-#include "utils.hpp"
+
+Scope_info Scope_info::next_scope(Ast_node* scope_ident, uint64_t scope_hash)
+{
+    Scope_info old = *this;
+    this->depth++;
+    this->scope_ident = scope_ident;
+    this->scope_hash = scope_hash;
+    return old;
+}
 
 // call only on a unary op or argument
 Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rbp)
 {
-    Semantic_code tkn_sema = op_semantics_table[lexer.tkn_at(0).type];
+    Semantic_code tkn_sema = tkn_semantics_table[lexer.tkn_at(0).type];
     Ast_node* left = nullptr;
     left = tkn_sema.nud(lexer.tkn_at(0).type, lexer, parser, nullptr, super);
     if(!lexer.not_eof() || !left)
 	return left;
 
-    tkn_sema = op_semantics_table[lexer.tkn_at(0).type];
+    tkn_sema = tkn_semantics_table[lexer.tkn_at(0).type];
     while(rbp < tkn_sema.lbp ) {
 	Ast_node* new_left = nullptr;
 	new_left = tkn_sema.led(lexer.tkn_at(0).type, lexer, parser, left, super);
@@ -43,15 +38,10 @@ Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rb
 	left = new_left;
 	if(!lexer.not_eof())
 	    return left;
-	tkn_sema = op_semantics_table[lexer.tkn_at(0).type];
+	tkn_sema = tkn_semantics_table[lexer.tkn_at(0).type];
     }
 
     return left;
-}
-
-static bool tkn_legal_in_global_space(Token_enum type)
-{
-    return type == ':' || type == tkn_do;
 }
 
 static void build_ast(Lexer &lexer, Parser &parser)

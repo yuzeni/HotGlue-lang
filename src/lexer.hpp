@@ -24,7 +24,6 @@ enum Token_enum : uint32_t {
     tkn_string,
     tkn_true,
     tkn_false,
-    tkn_placeholder,
 
     /* keywords */
 
@@ -47,6 +46,7 @@ enum Token_enum : uint32_t {
     tkn_symbol,
     tkn_this,
     tkn_all,
+    tkn_placeholder,
 
     // external business
     tkn_extern,

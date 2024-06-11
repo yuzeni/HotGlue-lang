@@ -1,44 +1,46 @@
 #pragma once
 
-#include <iostream>
-#include <string_view>
 #include <unordered_map>
 
 #include "lexer.hpp"
-#include "utils.hpp"
 
-enum Node_type : uint16_t {
-    nt_none,
-
-    nt_type,
-    nt_array_type, // a type with []
-    nt_object,
-    nt_attribute, // like: req, not_from, to, ...
-    nt_builtin_func,
-
-    nt_func,
-    nt_func_in,
-    nt_func_out,
-    nt_func_body,
-    nt_func_call,
-    nt_procedure,
-
-    nt_arithm_op,
-    nt_arithm_expr,
-
-    nt_object_op,
-    nt_object_expr,
-
-    nt_SIZE
+enum Type_enum : uint16_t {
+    T_None = 0,
+    T_All, // a special unnamed object
+    T_Unnamed_Object,
+    T_Object_Type,
+    T_Function_Object,
+    T_Data_Object,
+    T_Array,
+    
+    T_s8,
+    T_s16,
+    T_s32,
+    T_s64,
+    T_u8,
+    T_u16,
+    T_u32,
+    T_u64,
+    T_f8,
+    T_f16,
+    T_f32,
+    T_f64,
+    T_str,
+    T_bool,
+    T_ident_type,
+    T_symbol,
+    T_this,
+    T_placeholder
+    // list all base types!! And possible composite structures (array, etc)
+    
 };
 
-
 struct Ast_node {
-    Ast_node() : type(nt_none), tkn{} {}
-    Ast_node(Token tkn, Ast_node* super = nullptr, Node_type type = nt_none)
-	: type(type), super(super), tkn(tkn) {}
+    Ast_node() : type_result(T_None), tkn{} {}
+    Ast_node(Token tkn, Ast_node* super = nullptr, Type_enum type_result = T_None)
+	: type_result(type_result), super(super), tkn(tkn) {}
 
-    Node_type type;
+    Type_enum type_result;
     uint64_t id = 0; // unique id for identifiers.
     Ast_node* super = nullptr;
     Ast_node* alt_sub = nullptr; // next sub with the same super

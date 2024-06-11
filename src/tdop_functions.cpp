@@ -1,26 +1,16 @@
+
 #include "tdop_functions.hpp"
-#include "semantics_table.hpp"
+
+#include <cstdint>
+#include <limits>
+#include <cmath>
+
+#include "ast.hpp"
+#include "semantics.hpp"
 #include "parser.hpp"
 
-static bool is_base_type(Token_enum t)
-{
-    return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64 ||
-	t == tkn_u8 || t == tkn_u16 || t == tkn_u32 || t == tkn_u64 ||
-	t == tkn_f8 || t == tkn_f16 || t == tkn_f32 || t == tkn_f64 ||
-	t == tkn_str || t == tkn_bool;
-}
-
-static bool is_numeric_type(Token_enum t)
-{
-    return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64 ||
-	t == tkn_u8 || t == tkn_u16 || t == tkn_u32 || t == tkn_u64 ||
-	t == tkn_f8 || t == tkn_f16 || t == tkn_f32 || t == tkn_f64;
-}
-
-static bool is_sint_type(Token_enum t)
-{
-    return t == tkn_s8 || t == tkn_s16 || t == tkn_s32 || t == tkn_s64;
-}
+#include "utils.hpp"
+#include "log_and_debug.hpp"
 
 static bool add_single_sub(Ast_node *node, Ast_node *sub)
 {
@@ -56,7 +46,7 @@ static bool add_alternative_sub(Ast_node *node, Ast_node *prev_sub, Ast_node *al
 
 static bool get_and_add_right_unary(Token_enum tkn_type, Ast_node* node, Lexer& lexer, Parser& parser)
 {
-    if(!(lexer.not_eof() && add_single_sub(node, parse_expression(lexer, parser, node, op_semantics_table[tkn_type].rbp)))) {
+    if(!(lexer.not_eof() && add_single_sub(node, parse_expression(lexer, parser, node, tkn_semantics_table[tkn_type].rbp)))) {
 	lexer.parsing_error(node->tkn, "Missing right argument for unary operator '%s'.", get_token_name_str(tkn_type).c_str());
 	return false;
     }
@@ -65,7 +55,7 @@ static bool get_and_add_right_unary(Token_enum tkn_type, Ast_node* node, Lexer& 
 
 static bool get_and_add_right_binary(Token_enum tkn_type, Ast_node* node, Lexer& lexer, Parser& parser)
 {
-    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, parser, node, op_semantics_table[tkn_type].rbp)))) {
+    if(!(lexer.not_eof() && add_alternative_sub(node, node->sub, parse_expression(lexer, parser, node, tkn_semantics_table[tkn_type].rbp)))) {
 	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
     	return false;
     }
@@ -74,7 +64,7 @@ static bool get_and_add_right_binary(Token_enum tkn_type, Ast_node* node, Lexer&
 
 static bool get_and_add_next_sub(Token_enum tkn_type, Ast_node* node, Ast_node** prev_sub, Lexer& lexer, Parser& parser)
 {
-    if(!(lexer.not_eof() && add_alternative_sub(node, prev_sub, parse_expression(lexer, parser, node, op_semantics_table[tkn_type].rbp)))) {
+    if(!(lexer.not_eof() && add_alternative_sub(node, prev_sub, parse_expression(lexer, parser, node, tkn_semantics_table[tkn_type].rbp)))) {
 	lexer.parsing_error(lexer.tkn_at(0), "Missing statemenet after '%s'.");
 	return false;
     }
@@ -84,12 +74,109 @@ static bool get_and_add_next_sub(Token_enum tkn_type, Ast_node* node, Ast_node**
 Ast_node *nud_error(NUD_ARGS)
 {
     lexer.parsing_error(lexer.tkn_at(0), "The token '%s' has no unary method.", get_token_name_str(tkn_type).c_str());
-    Semantic_code tkn_sema = op_semantics_table[tkn_type];
+    Semantic_code tkn_sema = tkn_semantics_table[tkn_type];
     // if it has a led try that one instead.
     if(tkn_sema.led != led_error && left)
-	return tkn_sema.led(tkn_type, lexer, parser, left, super);
+	return tkn_sema.led(PASS_LED_ARGS);
     lexer.next_token();
     return nullptr;
+}
+
+Ast_node *nud_ident(NUD_ARGS)
+{
+    Ast_node* node = nud_arg(PASS_NUD_ARGS);
+    // lookup declare type of identifier
+    // node->type_result = ;
+    return node;
+}
+
+Ast_node *nud_int(NUD_ARGS)
+{
+    Type_enum type_result = T_None;
+    if(lexer.tkn_at(0).i == 0 || lexer.tkn_at(0).i == 1)
+	type_result = T_bool;
+    else if(lexer.tkn_at(0).i > 1) {
+	if(lexer.tkn_at(0).i <= std::numeric_limits<uint8_t>::max())
+	    type_result = T_u8;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint16_t>::max())
+	    type_result = T_u16;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint32_t>::max())
+	    type_result = T_u32;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint64_t>::max())
+	    type_result = T_u64;
+    }
+    else {
+	// can't use abs, because abs(min) != abs(max)
+	if(lexer.tkn_at(0).i <= std::numeric_limits<int8_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int8_t>::min())
+	    type_result = T_s8;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<int16_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int16_t>::min())
+	    type_result = T_s16;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<int32_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int32_t>::min())
+	    type_result = T_s32;
+	else if(lexer.tkn_at(0).i <= std::numeric_limits<int64_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int64_t>::min())
+	    type_result = T_s64;
+    }
+    
+    Ast_node* node = nud_arg(PASS_NUD_ARGS);
+    node->type_result = type_result;
+    return node;
+}
+
+Ast_node *nud_real(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_f64};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_string(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_str};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_true(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_bool};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_false(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_bool};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_placeholder(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_placeholder};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_types(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_this(NUD_ARGS)
+{
+    Ast_node* node = nud_arg(PASS_NUD_ARGS);
+    node->tkn.type = tkn_ident;
+    node->tkn.sv = parser.scope_info.scope_ident->tkn.sv;
+    return node;
+}
+
+Ast_node *nud_all(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_All};
+    lexer.next_token();
+    return node;
 }
 
 Ast_node *nud_delimiter(NUD_ARGS)
@@ -98,7 +185,16 @@ Ast_node *nud_delimiter(NUD_ARGS)
     return nullptr;
 }
 
+// BUG: this cannot be a nud!!
 Ast_node *nud_left(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
+    lexer.next_token();
+    add_single_sub(node, left);
+    return node;
+}
+
+Ast_node *led_left(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
@@ -118,14 +214,7 @@ Ast_node *nud_arg(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
-    return node;
-}
-
-Ast_node *nud_this(NUD_ARGS)
-{
-    Ast_node* node = nud_arg(tkn_type, lexer, parser, left, super);
-    node->tkn.type = tkn_ident;
-    node->tkn.sv = parser.scope_info.scope_ident->tkn.sv;
+    
     return node;
 }
 
@@ -179,8 +268,7 @@ Ast_node *nud_set_op(NUD_ARGS)
 Ast_node *led_error(LED_ARGS)
 {
     lexer.parsing_error(lexer.tkn_at(0), "The token '%s' has no binary method.", get_token_name_str(tkn_type).c_str());
-    Semantic_code tkn_sema = op_semantics_table[tkn_type];
-    // We cant try nud, because we don't know super
+    Semantic_code tkn_sema = tkn_semantics_table[tkn_type];    // We cant try nud, because we don't know super
     if(tkn_sema.nud != nud_error)
 	return tkn_sema.nud(tkn_type, lexer, parser, left, super);
     lexer.next_token();

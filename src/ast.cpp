@@ -8,25 +8,6 @@
 #include "utils.hpp"
 #include "log_and_debug.hpp"
 
-const char* node_type_name_table[nt_SIZE] {
-    "none",
-    "type",
-    "array_type",
-    "object",
-    "attribute",
-    "builtin_func",
-    "func",
-    "func_in",
-    "func_out",
-    "func_body",
-    "func_call",
-    "procedure",
-    "arithm_op",
-    "arithm_expr",
-    "object_op",
-    "object_expr"
-};
-
 bool compare_ident_nodes(Ast_node *id_a, Ast_node *id_b)
 {
     // traverse tree and check for equivalence, also include supers for scope hash!
@@ -102,9 +83,6 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 {
     for(int i = 0; i < depth; ++i)
 	std::cout << "   ";
-    
-    if(node->type != nt_none)
-	std::cout << HG_BRIGHT_BLUE_COLOR << node_type_name_table[node->type] << HG_END_COLOR " ";
     
     if(config & PN_SHOW_CONTENT) {
 	switch(node->tkn.type) {

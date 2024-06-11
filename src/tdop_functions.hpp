@@ -1,16 +1,36 @@
 #pragma once
+
 #include "ast.hpp"
-#include "parser.hpp"
 
-#define NUD_ARGS							\
-    [[maybe_unused]] Token_enum tkn_type, [[maybe_unused]] Lexer &lexer, \
-	[[maybe_unused]] Parser &parser, [[maybe_unused]] Ast_node *left, \
-	[[maybe_unused]] Ast_node *super
+class Lexer;
+class Parser;
 
-#define LED_ARGS							\
-    [[maybe_unused]] Token_enum tkn_type, [[maybe_unused]] Lexer &lexer, \
-	[[maybe_unused]] Parser &parser, [[maybe_unused]] Ast_node *left, \
-	[[maybe_unused]] Ast_node *super
+#define NUD_ARGS                                                               \
+  [[maybe_unused]] Token_enum tkn_type, [[maybe_unused]] Lexer &lexer,         \
+      [[maybe_unused]] Parser &parser, [[maybe_unused]] Ast_node *left,        \
+      [[maybe_unused]] Ast_node *super
+
+#define LED_ARGS                                                               \
+  [[maybe_unused]] Token_enum tkn_type, [[maybe_unused]] Lexer &lexer,         \
+      [[maybe_unused]] Parser &parser, [[maybe_unused]] Ast_node *left,        \
+      [[maybe_unused]] Ast_node *super
+
+#define PASS_NUD_ARGS tkn_type, lexer, parser, left, super
+#define PASS_LED_ARGS tkn_type, lexer, parser, left, super
+
+/* nuds "null denotation" */
+// they do not take the left argument
+
+Ast_node *nud_ident(NUD_ARGS);
+Ast_node *nud_int(NUD_ARGS);
+Ast_node *nud_real(NUD_ARGS);
+Ast_node *nud_string(NUD_ARGS);
+Ast_node *nud_true(NUD_ARGS);
+Ast_node *nud_false(NUD_ARGS);
+Ast_node *nud_placeholder(NUD_ARGS);
+
+Ast_node *nud_types(NUD_ARGS);
+Ast_node *nud_all(NUD_ARGS);
 
 Ast_node *nud_left(NUD_ARGS);
 Ast_node *nud_right(NUD_ARGS);
@@ -25,6 +45,12 @@ Ast_node *nud_not(NUD_ARGS);
 Ast_node *nud_increment(NUD_ARGS);
 Ast_node *nud_decrement(NUD_ARGS);
 Ast_node *nud_ident_flag(NUD_ARGS);
+
+/* leds "left denotation" */
+
+Ast_node *led_do(LED_ARGS);
+
+Ast_node *led_left(LED_ARGS);
 
 Ast_node *led_normal(LED_ARGS);
 Ast_node *led_parenthesis(LED_ARGS);

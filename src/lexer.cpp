@@ -92,7 +92,6 @@ const char *token_name_table[tkn_SIZE - 256]{
     "string",
     "true",
     "false",
-    "placeholder",
 
     /* keywords */
     
@@ -115,6 +114,7 @@ const char *token_name_table[tkn_SIZE - 256]{
     "symbol",
     "this",
     "all",
+    "placeholder",
     // external business
     "extern",
     "exr",

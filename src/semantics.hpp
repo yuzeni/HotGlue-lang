@@ -2,7 +2,10 @@
 
 #include <array>
 
+#include "ast.hpp"
 #include "tdop_functions.hpp"
+#include "type_rule_functions.hpp"
+
 
 struct Semantic_code {
     int lbp = 0; // left-binding-power
@@ -12,45 +15,46 @@ struct Semantic_code {
                  // where lbp <= rbp guarantees left- and lbp > rbp right associativity.
     Ast_node* (*nud)(NUD_ARGS) = nud_error;
     Ast_node* (*led)(LED_ARGS) = led_error;
+    Type_enum (*type_eval)(TYPE_EVAL_ARGS) = tval_none;
 };
 
-consteval std::array<Semantic_code, tkn_SIZE> get_op_semantics_table()
+consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
 {
     std::array<Semantic_code, tkn_SIZE> table;
     
     table.fill({});
 
     /* literals */
-    table[tkn_ident]       = {0, 0, nud_arg};
-    table[tkn_int]         = {0, 0, nud_arg};
-    table[tkn_real]        = {0, 0, nud_arg};
-    table[tkn_string]      = {0, 0, nud_arg};
-    table[tkn_true]        = {0, 0, nud_arg};
-    table[tkn_false]       = {0, 0, nud_arg};
-    table[tkn_placeholder] = {0, 0, nud_arg};
+    table[tkn_ident]       = {0, 0, nud_ident};
+    table[tkn_int]         = {0, 0, nud_int};
+    table[tkn_real]        = {0, 0, nud_real};
+    table[tkn_string]      = {0, 0, nud_string};
+    table[tkn_true]        = {0, 0, nud_true};
+    table[tkn_false]       = {0, 0, nud_false};
+    table[tkn_placeholder] = {0, 0, nud_placeholder};
 
     /* base types */
-    table[tkn_s8]          = {0, 0, nud_arg};
-    table[tkn_s16]         = {0, 0, nud_arg};
-    table[tkn_s32]         = {0, 0, nud_arg};
-    table[tkn_s64]         = {0, 0, nud_arg};
-    table[tkn_u8]          = {0, 0, nud_arg};
-    table[tkn_u16]         = {0, 0, nud_arg};
-    table[tkn_u32]         = {0, 0, nud_arg};
-    table[tkn_u64]         = {0, 0, nud_arg};
-    table[tkn_f8]          = {0, 0, nud_arg};
-    table[tkn_f16]         = {0, 0, nud_arg};
-    table[tkn_f32]         = {0, 0, nud_arg};
-    table[tkn_f64]         = {0, 0, nud_arg};
-    table[tkn_str]         = {0, 0, nud_arg};
-    table[tkn_bool]        = {0, 0, nud_arg};
-    table[tkn_ident_type]  = {0, 0, nud_arg};
-    table[tkn_symbol]      = {0, 0, nud_arg};
-    table[tkn_this]        = {0, 0, nud_arg};//nud_this};
-    table[tkn_all]         = {0, 0, nud_set_op};
+    table[tkn_s8]          = {0, 0, nud_types};
+    table[tkn_s16]         = {0, 0, nud_types};
+    table[tkn_s32]         = {0, 0, nud_types};
+    table[tkn_s64]         = {0, 0, nud_types};
+    table[tkn_u8]          = {0, 0, nud_types};
+    table[tkn_u16]         = {0, 0, nud_types};
+    table[tkn_u32]         = {0, 0, nud_types};
+    table[tkn_u64]         = {0, 0, nud_types};
+    table[tkn_f8]          = {0, 0, nud_types};
+    table[tkn_f16]         = {0, 0, nud_types};
+    table[tkn_f32]         = {0, 0, nud_types};
+    table[tkn_f64]         = {0, 0, nud_types};
+    table[tkn_str]         = {0, 0, nud_types};
+    table[tkn_bool]        = {0, 0, nud_types};
+    table[tkn_ident_type]  = {0, 0, nud_types};
+    table[tkn_symbol]      = {0, 0, nud_types};
+    table[tkn_this]        = {0, 0, nud_this}; // nud_type
+    table[tkn_all]         = {0, 0, nud_all};
 
     /* structure */
-    table[tkn_do]          = {1, 1, nud_error, led_normal};
+    table[tkn_do]          = {1, 1, nud_error, led_do};
     table[tkn_expa]        = {2, 2, nud_error, led_normal};
     table[tkn_trigger]     = {2, 2, nud_error, led_normal};
     table[tkn_using]       = {0, 2, nud_right};
@@ -65,8 +69,8 @@ consteval std::array<Semantic_code, tkn_SIZE> get_op_semantics_table()
     table[tkn_update_sub]  = {6, 6, nud_error, led_normal};//led_update_sub};
     table[tkn_update_mul]  = {6, 6, nud_error, led_normal};//led_update_mul};
     table[tkn_update_div]  = {6, 6, nud_error, led_normal};//led_update_div};
-    table[tkn_increment]   = {6, 0, nud_left};//nud_increment};
-    table[tkn_decrement]   = {6, 0, nud_left};//nud_decrement};
+    table[tkn_increment]   = {6, 0, nud_error, led_left};//nud_left};//nud_increment};
+    table[tkn_decrement]   = {6, 0, nud_error, led_left};//nud_left};//nud_decrement};
     
     table[tkn_or]          = {7, 7, nud_error, led_normal};//led_or};
     table[tkn_and]         = {8, 8, nud_error, led_normal};//led_and};
@@ -116,4 +120,13 @@ consteval std::array<Semantic_code, tkn_SIZE> get_op_semantics_table()
     return table;
 }
 
-static const std::array<Semantic_code, tkn_SIZE> op_semantics_table = get_op_semantics_table();
+static const std::array<Semantic_code, tkn_SIZE> tkn_semantics_table = get_tkn_semantics_table();
+
+bool is_base_type(Token_enum t);
+bool is_numeric_type(Token_enum t);
+bool is_sint_type(Token_enum t);
+
+bool tkn_legal_in_global_space(Token_enum type);
+
+Type_enum eval_type_of_expression(Ast_node* node);
+bool is_any_type(Ast_node *node);

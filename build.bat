@@ -6,7 +6,7 @@ set tracy_path=C:\src\Tracy-0.10\tracy-0.10\public
 
 set exe_name=HotGlue.exe
 set defines=/D HG_PLATFORM_windows=1 /D HG_DEBUG=1 /D HG_LOG_ERRORS=1 /D HG_LOG_WARNINGS=1 /D HG_LOG_INFO=1
-set src_files=..\src\lexer.cpp ..\src\parser.cpp ..\src\test_parser.cpp ..\src\utils.cpp ..\src\ast.cpp ..\src\tdop_functions.cpp ..\src\type_checker.cpp
+set src_files=..\src\lexer.cpp ..\src\parser.cpp ..\src\test_parser.cpp ..\src\utils.cpp ..\src\ast.cpp ..\src\tdop_functions.cpp ..\src\type_rule_functions.cpp
 rem /W4 /Wall /O2
 set CFlags=/std:c++20 /EHsc /MD /Zi
 set include_paths
