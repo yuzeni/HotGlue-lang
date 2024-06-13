@@ -184,8 +184,19 @@ Ast_node *nud_size(NUD_ARGS)
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_u64};
     lexer.next_token();
     get_and_add_right_unary(tkn_type, node, lexer, parser);
-    if(!is_object_type(node->sub->type_result))
-	parser.type_error(node->sub, "Expected an object type, got '%s'", type_enum_name_table[node->sub->type_result]);
+
+    if(node->sub->type_result == T_Type_Object || node->sub->type_result == T_Data_Object) {
+	HG_object object = eval_object(node->sub);
+    }
+    else {
+	parser.type_error(node->sub, "Expected a 'type object' or 'data object', but got '%s'.", type_enum_name_table[node->sub->type_result]);
+	// tansform to int
+	node->tkn.type = tkn_int;
+	node->tkn.i = 0;
+    }
+
+    
+    
     return node;
 }
 

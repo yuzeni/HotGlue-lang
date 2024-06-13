@@ -245,3 +245,5 @@ These work *only on Objects*.
 *** ~size~
 - Use ~size(object)~ to get the element count of that object (the count of the first layer).
 - ~size()~ returns a value of type ~u64~.
+**** Exception Handling
+- if ~object~ is not an object type, a type error will be evoked and ~size()~ will evaluate to ~0~.

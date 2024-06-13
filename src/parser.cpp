@@ -77,16 +77,30 @@ static void build_ast(Lexer &lexer, Parser &parser)
     }
 }
 
+// evaluate expressions which depend on 'all'
+// we cannot evaluate everything at this stage, because it would be very costly
+// if we had to do this everytime the parser is called for just a few new lines.
+
+static void eval_global_expressions(Ast &ast)
+{
+    // iterate over vector with all the expressions which contain 'all'
+    // and replace them with the resulting expression.
+}
+
 static void parse_latest(Lexer &lexer, Parser& parser)
 {
     build_ast(lexer, parser);
-    if(lexer.parsing_error_cnt)
+    if(lexer.error_cnt) {
 	std::cout << "Compilation interrupted: " HG_ERROR_COLOR
 		  << lexer.error_cnt         << " errors.\n"
 		  << lexer.parsing_error_cnt << "parsing errors.\n"
 		  << parser.type_error_cnt   << "type errors.\n" HG_END_COLOR;
-    else
-	std::cout << "Parsing finished" HG_SUCCESS_COLOR " successfully" HG_END_COLOR ".\n";
+	return;
+    }
+    std::cout << "Parsing finished" HG_SUCCESS_COLOR " successfully" HG_END_COLOR ".\n";
+    
+    eval_global_expressions(parser.ast);
+    
 }
 
 void Parser::parse_file(const char *file_path)

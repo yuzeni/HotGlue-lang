@@ -141,7 +141,6 @@ calc_ccq_intersec: (fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Tim
         fluid.attribs.CC_count = 0
         funCUDA calc_ccq_intersections(mesh, fluid.attribs.CC_count)(fluid)
     }
-    
     fluid.attribs.CCQ.time = fluid.Time
 } -> {fluid, meshes}
 

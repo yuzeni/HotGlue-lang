@@ -37,6 +37,12 @@ enum Type_enum : uint16_t {
     
 };
 
+enum Type_flags : uint32_t {
+    TF_None           = 0,
+    TF_Depends_on_all = 1,
+    TF_Complete_const = 1 << 1,
+};
+
 static const char *type_enum_name_table[T_SIZE] {
     "None"
     "All"
@@ -66,11 +72,21 @@ static const char *type_enum_name_table[T_SIZE] {
 };
 
 struct Ast_node {
-    Ast_node() : type_result(T_None), tkn{} {}
-    Ast_node(Token tkn, Ast_node* super = nullptr, Type_enum type_result = T_None)
-	: type_result(type_result), super(super), tkn(tkn) {}
+    Ast_node() : type_result(T_None), type_flags(TF_None), tkn{} {}
+    Ast_node(Token tkn, Ast_node* super = nullptr, Type_enum type_result = T_None, Type_flags type_flags = TF_None)
+	: type_result(type_result), type_flags(type_flags), super(super), tkn(tkn) {}
 
+    void super_delete() {
+	
+    }
+    
+    Ast_node* node_delete() {
+
+	return 
+    }
+    
     Type_enum type_result;
+    Type_flags type_flags;
     uint64_t id = 0; // unique id for identifiers.
     Ast_node* super = nullptr;
     Ast_node* alt_sub = nullptr; // next sub with the same super
@@ -80,22 +96,33 @@ struct Ast_node {
     uint64_t count_subs(Ast_node* node) const;
 };
 
-enum Type_flags : uint16_t {
-    TF_none      = 0,
-    TF_base_type = 1,      // It is a base type (can additionally be an array)
-    TF_array     = 1 << 1, // Doesn't inform about the dimensionality of the array, just that it is one.
-    TF_ident     = 1 << 2, // Declaration with previously defined type
-    TF_set       = 1 << 3, // Declaration with a set of types
-};
+// don't call this directly (UNTESTED)
+void super_delete(Ast_node *node)
+{
+    if(node->sub)
+	super_delete(node->sub);
+    if(node->alt_sub)
+	super_delete(node->alt_sub);
+    delete node;
+}
+
+// call this to delete an Ast_node (UNTESTED)
+Ast_node *node_delete(Ast_node *node)
+{
+    if(node->sub)
+	super_delete(node->sub);
+    Ast_node* alt_sub = node->alt_sub;
+    delete node;
+    return alt_sub;
+}
 
 struct Identifier_info {
     Identifier_info()
-	: ident(nullptr), flags(TF_none) {}
-    Identifier_info(Ast_node* ident, Type_flags flags = TF_none)
-	: ident(ident), flags(flags) {}
+	: ident(nullptr) {}
+    Identifier_info(Ast_node* ident)
+	: ident(ident) {}
     // points to the identifier. The alt_sub will be the actual declaration, if there is one.
     Ast_node* ident;
-    Type_flags flags; // falgs might be useless !!!!!!!!
 };
 
 enum Print_ast_enum : uint64_t {
