@@ -14,6 +14,7 @@
 
 #include "lexer.hpp"
 #include "ast.hpp"
+#include "log_and_debug.hpp"
 
 struct Scope_info {
     
@@ -32,6 +33,14 @@ public:
 
     void type_error(Ast_node* node, const char* msg);
 
+    template<typename... Args>
+    void type_error(Ast_node* node, const char* msg, Args... args)
+    {
+	lexer.print_error(node->tkn.ptr, HG_err::type, msg, args...);
+	++type_error_cnt;
+    }
+    int type_error_cnt = 0;
+    
     Ast ast{};
     Scope_info scope_info;
 

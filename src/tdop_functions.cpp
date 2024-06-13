@@ -179,6 +179,53 @@ Ast_node *nud_all(NUD_ARGS)
     return node;
 }
 
+Ast_node *nud_size(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_u64};
+    lexer.next_token();
+    get_and_add_right_unary(tkn_type, node, lexer, parser);
+    if(!is_object_type(node->sub->type_result))
+	parser.type_error(node->sub, "Expected an object type, got '%s'", type_enum_name_table[node->sub->type_result]);
+    return node;
+}
+
+Ast_node *nud_do(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    lexer.next_token();
+    get_and_add_right_unary(tkn_type, node, lexer, parser);
+    return node;
+}
+
+Ast_node *nud_expand(NUD_ARGS)
+{
+    Ast_node* expand_node = new Ast_node{lexer.tkn_at(0), super, T_Unnamed_Object};
+    lexer.next_token();
+    // get the set to expand over
+    get_and_add_right_unary(tkn_type, expand_node, lexer, parser);
+    lexer.next_token();
+
+    // do type checking of the expand set
+    // if the set is known already and also small, expand everything alread.
+    // otherwise just make the necessary links.
+    
+    Ast_node* prev_sub = expand_node->sub;
+    // get the statement to expand over
+    get_and_add_next_sub(tkn_type, expand_node, &prev_sub, lexer, parser);
+
+    // do type checking on the expand statement
+    
+    return expand_node;
+}
+
+Ast_node *nud_trigger(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    lexer.next_token();
+    get_and_add_right_unary(tkn_type, node, lexer, parser);
+    return node;
+}
+
 Ast_node *nud_delimiter(NUD_ARGS)
 {
     lexer.next_token();
@@ -214,7 +261,6 @@ Ast_node *nud_arg(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
-    
     return node;
 }
 

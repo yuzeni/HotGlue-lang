@@ -65,12 +65,14 @@ enum Token_enum : uint32_t {
     tkn_last,
     // miscellaneous
     tkn_req,
-    tkn_expa,
+    tkn_expand,
     tkn_trigger,
     tkn_using,
     tkn_do,
     tkn_to,
     tkn_include,
+    // helpers
+    tkn_size,
 
     /* mutliple char operators */
 
@@ -166,20 +168,25 @@ public:
     void print_token(Token& tkn, bool show_content = false, bool keep_line_location = true) const;
 
     template<typename... Args>
-    void parsing_error(Token& tkn, const char* msg, Args... args) { parsing_error(tkn.ptr, msg, args...); }
+    void parsing_error(Token& tkn, const char* msg, Args... args)
+    {
+	print_error(tkn.ptr, HG_err::parsing, msg, args...);
+	++parsing_error_cnt;
+    }
     
     template<typename... Args>
-    void parsing_error(char* p, const char* msg, Args... args)
+    void print_error(char* p, HG_err error_type, const char* msg, Args... args)
     {
 	Source_location src_loca = input.get_src_location(p);
 	auto line = get_line_with_error(p, input.get_src_ref(p));
 	const Source& src = input.get_src_ref(p);
-	hg_error(HG_err::parsing, cte_concat_c_str({"[%s:\033[91m%d\033[0m:\033[94m%d\033[0m]\n\033[93m", msg, "\033[0m\n\'%s\'\n %s"}).c_str(),
+	hg_error(error_type, cte_concat_c_str({"[%s:\033[91m%d\033[0m:\033[94m%d\033[0m]\n\033[93m", msg, "\033[0m\n\'%s\'\n %s"}).c_str(),
 		 src.info.c_str(), src_loca.line, src_loca.offset, args..., line.first.c_str(), line.second.c_str());
-	++parsing_error_cnt;
+	++error_cnt;
     }
     
     int parsing_error_cnt = 0;
+    int error_cnt = 0;
 
 private:
 

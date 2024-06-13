@@ -4,8 +4,6 @@
 
 #include "ast.hpp"
 #include "tdop_functions.hpp"
-#include "type_rule_functions.hpp"
-
 
 struct Semantic_code {
     int lbp = 0; // left-binding-power
@@ -15,7 +13,6 @@ struct Semantic_code {
                  // where lbp <= rbp guarantees left- and lbp > rbp right associativity.
     Ast_node* (*nud)(NUD_ARGS) = nud_error;
     Ast_node* (*led)(LED_ARGS) = led_error;
-    Type_enum (*type_eval)(TYPE_EVAL_ARGS) = tval_none;
 };
 
 consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
@@ -53,10 +50,13 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     table[tkn_this]        = {0, 0, nud_this}; // nud_type
     table[tkn_all]         = {0, 0, nud_all};
 
+    /* helper functions */
+    table[tkn_size]        = {0, 1, nud_size};
+
     /* structure */
-    table[tkn_do]          = {1, 1, nud_error, led_do};
-    table[tkn_expa]        = {2, 2, nud_error, led_normal};
-    table[tkn_trigger]     = {2, 2, nud_error, led_normal};
+    table[tkn_do]          = {1, 1, nud_do};
+    table[tkn_expand]      = {2, 2, nud_expand};
+    table[tkn_trigger]     = {2, 2, nud_trigger};
     table[tkn_using]       = {0, 2, nud_right};
     table[':']             = {3, 3, nud_error, led_declare};
     table[tkn_return]      = {4, 4, nud_error, led_normal};
@@ -122,11 +122,9 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
 
 static const std::array<Semantic_code, tkn_SIZE> tkn_semantics_table = get_tkn_semantics_table();
 
-bool is_base_type(Token_enum t);
-bool is_numeric_type(Token_enum t);
-bool is_sint_type(Token_enum t);
-
 bool tkn_legal_in_global_space(Token_enum type);
+
+bool is_object_type(Type_enum t);
 
 Type_enum eval_type_of_expression(Ast_node* node);
 bool is_any_type(Ast_node *node);

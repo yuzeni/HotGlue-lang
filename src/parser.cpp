@@ -56,7 +56,7 @@ static void build_ast(Lexer &lexer, Parser &parser)
 	if(parser.ast.global_scope.sub != nullptr) {
 	    prev_alt = parser.ast.global_scope.sub;
 	    if(!tkn_legal_in_global_space(prev_alt->tkn.type))
-		lexer.parsing_error(prev_alt->tkn, "Unexpected token, only object declarations are allowed in global space.");
+		lexer.parsing_error(prev_alt->tkn, "Unexpected token, only object declarations or 'do' statements are allowed in global space.");
 	}
 	else
 	    goto get_first_node;
@@ -69,7 +69,7 @@ static void build_ast(Lexer &lexer, Parser &parser)
 	    prev_alt->alt_sub->super = &parser.ast.global_scope;
 	    prev_alt = prev_alt->alt_sub;
 	    if(!tkn_legal_in_global_space(prev_alt->tkn.type))
-		lexer.parsing_error(prev_alt->tkn, "Unexpected token, only object declarations are allowed in global space.");
+		lexer.parsing_error(prev_alt->tkn, "Unexpected token, only object declarations or 'do' statements are allowed in global space.");
 	}
 	// failsafe for when we are not making progress.
 	if(start_ptr == lexer.tkn_at(0).ptr)
@@ -81,7 +81,10 @@ static void parse_latest(Lexer &lexer, Parser& parser)
 {
     build_ast(lexer, parser);
     if(lexer.parsing_error_cnt)
-	std::cout << "Compilation interrupted: " HG_ERROR_COLOR << lexer.parsing_error_cnt << " parsing errors" HG_END_COLOR ".\n";
+	std::cout << "Compilation interrupted: " HG_ERROR_COLOR
+		  << lexer.error_cnt         << " errors.\n"
+		  << lexer.parsing_error_cnt << "parsing errors.\n"
+		  << parser.type_error_cnt   << "type errors.\n" HG_END_COLOR;
     else
 	std::cout << "Parsing finished" HG_SUCCESS_COLOR " successfully" HG_END_COLOR ".\n";
 }

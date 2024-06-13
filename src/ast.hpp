@@ -8,7 +8,7 @@ enum Type_enum : uint16_t {
     T_None = 0,
     T_All, // a special unnamed object
     T_Unnamed_Object,
-    T_Object_Type,
+    T_Type_Object,
     T_Function_Object,
     T_Data_Object,
     T_Array,
@@ -30,9 +30,39 @@ enum Type_enum : uint16_t {
     T_ident_type,
     T_symbol,
     T_this,
-    T_placeholder
+    T_placeholder,
+
+    T_SIZE
     // list all base types!! And possible composite structures (array, etc)
     
+};
+
+static const char *type_enum_name_table[T_SIZE] {
+    "None"
+    "All"
+    "Unnamed_Object"
+    "Type_Object"
+    "Function_Object"
+    "Data_Object"
+    "Array"
+    "s8"
+    "s16"
+    "s32"
+    "s64"
+    "u8"
+    "u16"
+    "u32"
+    "u64"
+    "f8"
+    "f16"
+    "f32"
+    "f64"
+    "str"
+    "bool"
+    "ident_type"
+    "symbol"
+    "this"
+    "placeholder"
 };
 
 struct Ast_node {
@@ -46,6 +76,8 @@ struct Ast_node {
     Ast_node* alt_sub = nullptr; // next sub with the same super
     Ast_node* sub = nullptr;
     Token tkn;
+
+    uint64_t count_subs(Ast_node* node) const;
 };
 
 enum Type_flags : uint16_t {

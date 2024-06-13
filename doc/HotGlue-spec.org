@@ -165,18 +165,16 @@ These work *only on Objects*.
 ** Syntax Sugar
 
 *** The ~expand~ Structure
-- Expand is similar to a C-like for loop in the sense that it used to compact repetitive statements,
-  but with the important difference that there is no guaranteed order for the execution of the "expanded" statements.
-  This is because instead of operating on a range with an iterator operation, ~expand~ operates on an unordered set.
-  Such a behaviour harmonizes well with parallel hardware and provides more freedom to HotGlue for choosing
-  the path of least resistance.
-- Use ~expand(ident: description: set) { statement }~ where ~set~ is a set of objects of ~description~,
+- Expand is used for compactly declaring many (similar) objects.
+- There is no guaranteed order for the declaration, therefore they need to be independent, because
+  ~expand~ operates on an unordered set, instead of on an iterator.
+- Use ~expand(ident: description: set) { declaration }~ where ~set~ is a set of objects of ~description~,
   such that ~set~ >= ~description~ and ~description~ <= ~set~. Since ~ident~ would then be *overdefined*, ~expand~
-  will pratically assign different versions of ~ident~ to different elements in ~set~ and generate statements from
-  ~statement~ for all versions of ~ident~.
-- A not completely defined ~ident~ object, would also be a valid set. Using ~req~ the set can be constrained without
-  sepcifying an explicit set. For example ~expand (t: u64 req t < 10000) { do_something(t)}~. Would iterate over
-  all integers in the range [0, 10000).
+  will pratically assign different versions of ~ident~ to different elements in ~set~ and generate declarations from
+  ~declaration~ for all versions of ~ident~.
+- A not completely defined ~ident~ object, would also be a valid set (for example ~t: u64~). Using ~req~ the set can be
+  constrained without specifying an explicit set. For example ~expand (t: u64 req t < 10000) { do_something(t)}~, would
+  expand over all integers in the range [0, 10000).
   
 *** The ~using~ Keyword
 - Use ~using expression~ where expression contains ~_~ at least once, inside a scope, to replace all
@@ -242,3 +240,8 @@ These work *only on Objects*.
 | ~f16~          | -                        | ~__half~       | ~half~           |
 | ~f32~          | ~float~                  | =              | =                |
 | ~f64~          | ~double~                 | =              | =                |
+
+** Helper functions
+*** ~size~
+- Use ~size(object)~ to get the element count of that object (the count of the first layer).
+- ~size()~ returns a value of type ~u64~.

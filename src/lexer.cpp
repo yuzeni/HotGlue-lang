@@ -78,7 +78,7 @@ void Input::add_src(const char* data, size_t size, std::string info)
     std::sort(srcs_idx_sorted.begin(), srcs_idx_sorted.end(), std::less());
 }
 
-const char *token_name_table[tkn_SIZE - 256]{
+static const char *token_name_table[tkn_SIZE - 256]{
     "eof",
     "none",
     "global_scope",
@@ -132,12 +132,13 @@ const char *token_name_table[tkn_SIZE - 256]{
     "last",
     // miscellaneous
     "req",
-    "expa",
+    "expand",
     "trigger",
     "using",
     "do",
     "to",
     "include",
+    "size",
 
     /* mutliple char operators */
     "->",
@@ -216,12 +217,13 @@ Token_enum keyword_compare(const std::string_view sv)
     case cte_hash_c_str("first"): return tkn_first;
     case cte_hash_c_str("last"): return tkn_last;
     case cte_hash_c_str("req"): return tkn_req;
-    case cte_hash_c_str("expa"): return tkn_expa;
+    case cte_hash_c_str("expand"): return tkn_expand;
     case cte_hash_c_str("trigger"): return tkn_trigger;
     case cte_hash_c_str("using"): return tkn_using;
     case cte_hash_c_str("do"): return tkn_do;
     case cte_hash_c_str("to"): return tkn_to;
     case cte_hash_c_str("include"): return tkn_include;
+    case cte_hash_c_str("size"): return tkn_size;
     default: return tkn_ident;
     }
 }

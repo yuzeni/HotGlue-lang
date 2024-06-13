@@ -107,3 +107,13 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
     if(node->alt_sub)
 	print_node(node->alt_sub, config, depth);
 }
+
+uint64_t Ast_node::count_subs(Ast_node* node) const {
+    Ast_node* sub = node->sub;
+    uint64_t cnt = 0;
+    while(sub) {
+	++cnt;
+	sub = sub->alt_sub;
+    }
+    return cnt;
+}

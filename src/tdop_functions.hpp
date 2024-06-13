@@ -5,6 +5,7 @@
 class Lexer;
 class Parser;
 
+// TODO: perhaps remove left from nud
 #define NUD_ARGS                                                               \
   [[maybe_unused]] Token_enum tkn_type, [[maybe_unused]] Lexer &lexer,         \
       [[maybe_unused]] Parser &parser, [[maybe_unused]] Ast_node *left,        \
@@ -28,9 +29,14 @@ Ast_node *nud_string(NUD_ARGS);
 Ast_node *nud_true(NUD_ARGS);
 Ast_node *nud_false(NUD_ARGS);
 Ast_node *nud_placeholder(NUD_ARGS);
-
 Ast_node *nud_types(NUD_ARGS);
 Ast_node *nud_all(NUD_ARGS);
+
+Ast_node *nud_size(NUD_ARGS);
+
+Ast_node *nud_do(NUD_ARGS);
+Ast_node *nud_expand(NUD_ARGS);
+Ast_node *nud_trigger(NUD_ARGS);
 
 Ast_node *nud_left(NUD_ARGS);
 Ast_node *nud_right(NUD_ARGS);
@@ -47,8 +53,6 @@ Ast_node *nud_decrement(NUD_ARGS);
 Ast_node *nud_ident_flag(NUD_ARGS);
 
 /* leds "left denotation" */
-
-Ast_node *led_do(LED_ARGS);
 
 Ast_node *led_left(LED_ARGS);
 
