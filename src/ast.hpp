@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <unordered_map>
 
 #include "lexer.hpp"
@@ -76,15 +77,6 @@ struct Ast_node {
     Ast_node(Token tkn, Ast_node* super = nullptr, Type_enum type_result = T_None, Type_flags type_flags = TF_None)
 	: type_result(type_result), type_flags(type_flags), super(super), tkn(tkn) {}
 
-    void super_delete() {
-	
-    }
-    
-    Ast_node* node_delete() {
-
-	return 
-    }
-    
     Type_enum type_result;
     Type_flags type_flags;
     uint64_t id = 0; // unique id for identifiers.
@@ -97,24 +89,10 @@ struct Ast_node {
 };
 
 // don't call this directly (UNTESTED)
-void super_delete(Ast_node *node)
-{
-    if(node->sub)
-	super_delete(node->sub);
-    if(node->alt_sub)
-	super_delete(node->alt_sub);
-    delete node;
-}
+void super_delete(Ast_node *node);
 
 // call this to delete an Ast_node (UNTESTED)
-Ast_node *node_delete(Ast_node *node)
-{
-    if(node->sub)
-	super_delete(node->sub);
-    Ast_node* alt_sub = node->alt_sub;
-    delete node;
-    return alt_sub;
-}
+Ast_node *node_delete(Ast_node *node);
 
 struct Identifier_info {
     Identifier_info()
@@ -138,11 +116,13 @@ enum Print_ast_enum : uint64_t {
 // This will be repeated for each new identifier.
 // Also include keywords in the collision checking!
 
+typedef uint64_t Hash;
+
 struct Ast {
 
-    // uint64_t find_or_add_ident(Ast_node* node, uint64_t scope_hash);
-    uint64_t find_ident(Ast_node* node, uint64_t scope_hash);
-    uint64_t add_ident(Ast_node* node, uint64_t scope_hash);
+    Hash find_ident_in_scope(Ast_node* scope_super, Ast_node *ident);
+    Hash find_ident(Ast_node* scope_super, Ast_node* node);
+    Hash add_ident(Ast_node* node, Hash scope_hash);
 
     void print(Print_ast_enum config = Print_ast_enum(PN_SHOW_CONTENT)) const; // | PN_SUPER
     void print_node(const Ast_node* node, Print_ast_enum config, int depth = 0) const;
@@ -152,9 +132,5 @@ struct Ast {
 
     // set of all identifiers. The hash is precomputed to ensure no hash collisions.
     // this is a form of 'string interning': https://en.wikipedia.org/wiki/String_interning
-    std::unordered_map<uint64_t, Identifier_info> identifier_set;
-    
-    // every scope has its own vector for it's varible hashes.
-    // leaving a scope is as simple as popping a vector element of the outer vector.
-    std::vector<std::vector<uint64_t>> identifier_scopes;
+    std::unordered_map<Hash, Ast_node*> identifier_set;
 };

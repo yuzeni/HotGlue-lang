@@ -20,14 +20,21 @@ constexpr std::string cte_concat_c_str(std::initializer_list<std::string> strs) 
 // string hash funciton 'djb2' from: http://www.cse.yorku.ca/~oz/hash.html
 uint64_t hash_string_view(std::string_view s_v, uint64_t hash = utils::default_str_hash_value);
 
-constexpr uint64_t hash_c_str(const char* str, uint64_t hash = utils::default_str_hash_value) {
+constexpr uint64_t hash_c_str(const char *str, uint64_t hash = utils::default_str_hash_value)
+{
     int c;
     while((c = *(str++)))
 	hash = (hash * 33) ^ c;
     return hash;
 }
 
-consteval uint64_t cte_hash_c_str(const char* str, uint64_t hash = utils::default_str_hash_value) {
+constexpr uint64_t hash_char(char c, uint64_t hash = utils::default_str_hash_value)
+{
+    return (hash * 33) ^ c;
+}
+
+consteval uint64_t cte_hash_c_str(const char *str, uint64_t hash = utils::default_str_hash_value)
+{
     int c;
     while((c = *(str++)))
 	hash = (hash * 33) ^ c;

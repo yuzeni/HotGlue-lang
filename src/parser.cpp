@@ -83,6 +83,7 @@ static void build_ast(Lexer &lexer, Parser &parser)
 
 static void eval_global_expressions(Ast &ast)
 {
+    HG_DEB_not_implemented;
     // iterate over vector with all the expressions which contain 'all'
     // and replace them with the resulting expression.
 }
@@ -91,10 +92,10 @@ static void parse_latest(Lexer &lexer, Parser& parser)
 {
     build_ast(lexer, parser);
     if(lexer.error_cnt) {
-	std::cout << "Compilation interrupted: " HG_ERROR_COLOR
-		  << lexer.error_cnt         << " errors.\n"
-		  << lexer.parsing_error_cnt << "parsing errors.\n"
-		  << parser.type_error_cnt   << "type errors.\n" HG_END_COLOR;
+	std::cout << "Compilation interrupted:\n" HG_ERROR_COLOR
+		  << lexer.error_cnt         << "\terrors.\n" HG_END_COLOR
+		  << "\t" << lexer.parsing_error_cnt << "\tparsing errors.\n"
+		  << "\t" << parser.type_error_cnt   << "\ttype errors.\n";
 	return;
     }
     std::cout << "Parsing finished" HG_SUCCESS_COLOR " successfully" HG_END_COLOR ".\n";

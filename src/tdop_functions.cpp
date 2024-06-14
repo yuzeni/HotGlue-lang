@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "ast.hpp"
+#include "lexer.hpp"
 #include "semantics.hpp"
 #include "parser.hpp"
 
@@ -168,7 +169,10 @@ Ast_node *nud_this(NUD_ARGS)
 {
     Ast_node* node = nud_arg(PASS_NUD_ARGS);
     node->tkn.type = tkn_ident;
-    node->tkn.sv = parser.scope_info.scope_ident->tkn.sv;
+    if(parser.scope_info.scope_ident)
+	node->tkn.sv = parser.scope_info.scope_ident->tkn.sv;
+    else
+	lexer.parsing_error(node->tkn, "Can't use 'this' outside a scope.");
     return node;
 }
 
@@ -186,7 +190,7 @@ Ast_node *nud_size(NUD_ARGS)
     get_and_add_right_unary(tkn_type, node, lexer, parser);
 
     if(node->sub->type_result == T_Type_Object || node->sub->type_result == T_Data_Object) {
-	HG_object object = eval_object(node->sub);
+	HG_DEB_not_implemented;
     }
     else {
 	parser.type_error(node->sub, "Expected a 'type object' or 'data object', but got '%s'.", type_enum_name_table[node->sub->type_result]);
@@ -194,8 +198,6 @@ Ast_node *nud_size(NUD_ARGS)
 	node->tkn.type = tkn_int;
 	node->tkn.i = 0;
     }
-
-    
     
     return node;
 }
@@ -367,8 +369,8 @@ Ast_node *led_parenthesis(LED_ARGS)
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
     
-    if(is_func_call(left)) node->type = nt_func_call;
-    else                   return nullptr;
+    if(!is_func_call(left))
+	return nullptr;
     
     add_alternative_sub(node, node->sub, nud_bracket(tkn_type, lexer, parser, nullptr, node));
     return node;
@@ -377,16 +379,14 @@ Ast_node *led_parenthesis(LED_ARGS)
 // TODO: maybe enhance!
 static bool is_type(Ast_node *node)
 {
-    return node->tkn.type == tkn_ident || is_base_type(node->tkn.type);
+    return node->tkn.type == tkn_ident || (node->tkn.type >= tkn_s8 && node->tkn.type <= tkn_placeholder);
 }
 
 Ast_node *led_bracket(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     add_single_sub(node, left);
-    if(is_type(left) || left->tkn.type == '[')
-	node->type = nt_array_type;
-    else
+    if(!(is_type(left) || left->tkn.type == '['))
 	return nullptr;
     add_alternative_sub(node, node->sub, nud_bracket(tkn_type, lexer, parser, nullptr, node));
     return node;
@@ -406,7 +406,7 @@ Ast_node *led_declare(LED_ARGS)
     
     Ast_node* right = node->sub->alt_sub;
     Ast_node* prev_sub = right;
-    Type_flags flags = TF_none;
+    // Type_flags flags = TF_none;
 
     if(!left || !right)
 	goto end;

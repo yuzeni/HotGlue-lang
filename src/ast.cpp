@@ -15,42 +15,77 @@ bool compare_ident_nodes(Ast_node *id_a, Ast_node *id_b)
     return true;
 }
 
-
-uint64_t Ast::find_ident(Ast_node *node, uint64_t scope_hash)
+void super_delete(Ast_node *node)
 {
-    HG_DEB_assert(node->tkn.type == tkn_ident, "expected tkn_ident");
+    if(node->sub)
+	super_delete(node->sub);
+    if(node->alt_sub)
+	super_delete(node->alt_sub);
+    delete node;
+}
+
+Ast_node *node_delete(Ast_node *node)
+{
+    if(node->sub)
+	super_delete(node->sub);
+    Ast_node* alt_sub = node->alt_sub;
+    delete node;
+    return alt_sub;
+}
+
+Hash Ast::find_ident_in_scope(Ast_node* scope_super, Ast_node *ident_node)
+{
+    HG_DEB_assert(scope_super->tkn.type == tkn_ident, "expected tkn_ident");
+    HG_DEB_assert(ident_node->tkn.type == tkn_ident, "expected tkn_ident");
     
-    uint64_t id = scope_hash;
+    Hash id = scope_super->id;
+    id = hash_char('.', id);
+    id = hash_string_view(ident_node->tkn.sv, id);
 
-    // for loop over the identifier structure.
-    if(node->tkn.type == '.') {
-	HG_DEB_not_implemented;	
-    }
-    else if(node->tkn.type == tkn_ident) {
-	id = hash_c_str(".", id);
-	id = hash_string_view(node->tkn.sv, id);
-    }
-    else {
-	HG_DEB_error("expected a valid identifier construct");
-    }
-
-    std::unordered_map<uint64_t, Identifier_info>::iterator itr;
+    int itr_cnt = 0;
+    decltype(identifier_set)::iterator itr;
     do {
 	itr = identifier_set.find(id);
 	if(itr == identifier_set.end())
 	    return 0;
-	id += 1;
-    } while(itr->second.ident->tkn.sv != node->tkn.sv);
+	id += 1; // preliminary increment.
+	++itr_cnt;
+	if(itr_cnt > 10000)
+	    HG_DEB_error("infinite loop");
+    } while(itr->second->tkn.sv != ident_node->tkn.sv);
     
-    return id - 1;
+    return id - 1; // reversing preliminary increment.
 }
 
+Hash Ast::find_ident(Ast_node* scope_super, Ast_node *node)
+{
+    switch(node->tkn.type) {
+    case tkn_ident:
+    {
+	Hash id = 0;
+	while(id == 0 && scope_super) {
+	    id = find_ident_in_scope(scope_super, node);
+	    scope_super = scope_super->super;
+	}
+	return id;
+    }
+    case '.':
+	scope_super = identifier_set.at(find_ident(scope_super, node->sub));
+	// alt_sub will always be just an identifier.
+	return find_ident_in_scope(scope_super, node->sub->alt_sub);
+    case '\\':
+	scope_super = identifier_set.at(find_ident(scope_super->super, node->sub));
+	return find_ident_in_scope(scope_super->super, node->sub->alt_sub);
+    default:
+	return 0;
+    }
+}
 
-uint64_t Ast::add_ident(Ast_node *node, uint64_t scope_hash)
+Hash Ast::add_ident(Ast_node *node, Hash scope_hash)
 {
     HG_DEB_assert(node->tkn.type == tkn_ident, "expected tkn_ident");
     
-    uint64_t id = scope_hash;
+    Hash id = scope_hash;
 
     // for loop over the identifier structure and the scope.
     if(node->tkn.type == '.') {

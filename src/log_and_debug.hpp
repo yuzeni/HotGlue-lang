@@ -70,8 +70,7 @@ namespace HG_errors {
 	"type",
 	"out of range",
 	"bad memory allocation",
-	"not implemented"
-	
+	"not implemented",
     };
 
     static constexpr const char* err_type_to_str(HG_err err_type)
