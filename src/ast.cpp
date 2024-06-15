@@ -33,7 +33,7 @@ Ast_node *node_delete(Ast_node *node)
     return alt_sub;
 }
 
-Hash Ast::find_ident_in_scope(Ast_node* scope_super, Ast_node *ident_node)
+Hash Ast::find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super)
 {
     HG_DEB_assert(scope_super->tkn.type == tkn_ident, "expected tkn_ident");
     HG_DEB_assert(ident_node->tkn.type == tkn_ident, "expected tkn_ident");
@@ -48,7 +48,7 @@ Hash Ast::find_ident_in_scope(Ast_node* scope_super, Ast_node *ident_node)
 	itr = identifier_set.find(id);
 	if(itr == identifier_set.end())
 	    return 0;
-	id += 1; // preliminary increment.
+	++id; // preliminary increment.
 	++itr_cnt;
 	if(itr_cnt > 10000)
 	    HG_DEB_error("infinite loop");
@@ -57,54 +57,55 @@ Hash Ast::find_ident_in_scope(Ast_node* scope_super, Ast_node *ident_node)
     return id - 1; // reversing preliminary increment.
 }
 
-Hash Ast::find_ident(Ast_node* scope_super, Ast_node *node)
+Hash Ast::find_ident(Ast_node *node, Ast_node* scope_super)
 {
     switch(node->tkn.type) {
     case tkn_ident:
     {
 	Hash id = 0;
 	while(id == 0 && scope_super) {
-	    id = find_ident_in_scope(scope_super, node);
+	    id = find_ident_in_scope(node, scope_super);
 	    scope_super = scope_super->super;
 	}
 	return id;
     }
     case '.':
-	scope_super = identifier_set.at(find_ident(scope_super, node->sub));
+	scope_super = identifier_set.at(find_ident(node->sub, scope_super));
 	// alt_sub will always be just an identifier.
-	return find_ident_in_scope(scope_super, node->sub->alt_sub);
+	return find_ident_in_scope(node->sub->alt_sub, scope_super);
     case '\\':
-	scope_super = identifier_set.at(find_ident(scope_super->super, node->sub));
-	return find_ident_in_scope(scope_super->super, node->sub->alt_sub);
+	scope_super = identifier_set.at(find_ident(node->sub, scope_super->super));
+	return find_ident_in_scope(node->sub->alt_sub, scope_super->super);
     default:
 	return 0;
     }
 }
 
-Hash Ast::add_ident(Ast_node *node, Hash scope_hash)
+// returns 0 if the ident was already added.
+// returns the idents new id otherwise, it will also write id to that node.
+Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
 {
     HG_DEB_assert(node->tkn.type == tkn_ident, "expected tkn_ident");
     
-    Hash id = scope_hash;
+    Hash id = scope_super->id;
+    id = hash_char('.', id);
+    id = hash_string_view(ident_node->tkn.sv, id);
 
-    // for loop over the identifier structure and the scope.
-    if(node->tkn.type == '.') {
-	HG_DEB_not_implemented;
-    }
-    else if(node->tkn.type == tkn_ident) {
-	id = hash_c_str(".", id);
-	id = hash_string_view(node->tkn.sv, id);
-    }
-    else {
-	return 0;
-    }
-    
-    auto itr = identifier_set.find(id);
-    if(itr != identifier_set.end())
-	return 0;
-    
-    identifier_set.insert({id, Identifier_info{node}});
-    return id;
+    int itr_cnt = 0;
+    decltype(identifier_set)::iterator itr;
+    do {
+	itr = identifier_set.find(id);
+	if(itr == identifier_set.end()) {
+	    identifier_set.insert({id, ident_node});
+	    ident_node->id = id;
+	    return id;
+	}
+	++id;
+	++itr_cnt;
+	if(itr_cnt > 10000)
+	    HG_DEB_error("infinite loop");
+    } while(itr->second->tkn.sv != ident_node->tkn.sv);
+    return 0;
 }
 
 void Ast::print(Print_ast_enum config) const

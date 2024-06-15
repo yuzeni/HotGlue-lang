@@ -96,26 +96,21 @@ Ast_node *nud_int(NUD_ARGS)
     Type_enum type_result = T_None;
     if(lexer.tkn_at(0).i == 0 || lexer.tkn_at(0).i == 1)
 	type_result = T_bool;
-    else if(lexer.tkn_at(0).i > 1) {
-	if(lexer.tkn_at(0).i <= std::numeric_limits<uint8_t>::max())
-	    type_result = T_u8;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint16_t>::max())
-	    type_result = T_u16;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint32_t>::max())
-	    type_result = T_u32;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<uint64_t>::max())
-	    type_result = T_u64;
+    else if(lexer.tkn_at(0).i > 0) {
+	for(uint16_t type = T_u8; type < T_u64; ++type) {
+	    if(lexer.tkn_at(0).i <= int64_t(Type_num_limits_table[type].max)) {
+		type_result = Type_enum(type);
+		break;
+	    }
+	}
     }
     else {
-	// can't use abs, because abs(min) != abs(max)
-	if(lexer.tkn_at(0).i <= std::numeric_limits<int8_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int8_t>::min())
-	    type_result = T_s8;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<int16_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int16_t>::min())
-	    type_result = T_s16;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<int32_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int32_t>::min())
-	    type_result = T_s32;
-	else if(lexer.tkn_at(0).i <= std::numeric_limits<int64_t>::max() && lexer.tkn_at(0).i >= std::numeric_limits<int64_t>::min())
-	    type_result = T_s64;
+	for(uint16_t type = T_s8; type < T_s64; ++type) {
+	    if(lexer.tkn_at(0).i <= int64_t(Type_num_limits_table[type].max && lexer.tkn_at(0).i >= int64_t(Type_num_limits_table[type].min))) {
+		type_result = Type_enum(type);
+		break;
+	    }
+	}
     }
     
     Ast_node* node = nud_arg(PASS_NUD_ARGS);
@@ -399,48 +394,30 @@ Ast_node *led_declare(LED_ARGS)
     lexer.next_token();
     
     add_single_sub(node, left);
-    
-    // Scope_info enclosing_scope = g_scope_info.next_scope(left, hash_string_view(left->tkn.sv, g_scope_info.scope_hash));
-        
-    get_and_add_right_binary(tkn_type, node, lexer, parser);
-    
-    Ast_node* right = node->sub->alt_sub;
-    Ast_node* prev_sub = right;
-    // Type_flags flags = TF_none;
 
-    if(!left || !right)
-	goto end;
-
-    // if(is_any_type(left)) {
-    // 	lexer.parsing_error(node->tkn, "Expected a type, got '%s'", get_token_name_str(left->tkn.type).c_str());
-    // 	goto end;
-    // }
+    if(left->tkn.type == tkn_ident) {
     
-    // std::cout << "type: " << get_token_name_str(left->tkn.type) << '\n';
-    // HG_DEB_assert(left->id != 0, "id should be defined");
-    // std::cout << "id: " << left->id << " sv: " << left->tkn.sv << '\n';
-    // HG_DEB_assert(ast.identifier_set.find(left->id) != ast.identifier_set.end(), "id should have an identifier_set entry");
-    
-    // if(right->tkn.type == tkn_ident)
-    // 	flags = Type_flags(flags | TF_ident);
-    // if(right->type == nt_array_type)
-    // 	flags = Type_flags(flags | TF_array);
-    // if(is_base_type(right->tkn.type))
-    // 	flags = Type_flags(flags | TF_base_type);
-    // if(right->tkn.type == '{')
-    // 	flags = Type_flags(flags | TF_set);
-    // ast.identifier_set.at(left->id) = Identifier_info{left, flags};
-
-    while(lexer.tkn_at(0).type == ':') {
-	lexer.next_token();
-	// add the next declaration
-	if(!get_and_add_next_sub(Token_enum(':'), node, &prev_sub, lexer, parser))
-	    goto end;
+	if(left->type_result == T_Declared_Object || parser.ast.add_ident(left, node) == 0)
+	    lexer.parsing_error(left->tkn, "An object with the identifier '%s' was already declared in this scope.", std::string(left->tkn.sv).c_str());
+	get_and_add_right_binary(tkn_type, node, lexer, parser);
+	
+	node->type_result = node->sub->alt_sub->type_result;
+	node->type_flags = node->sub->alt_sub->type_flags;
     }
-
-end:
-    // g_scope_info.restore_scope(enclosing_scope);
-    return node;
+    else if(left->tkn.type == ':') {
+	get_and_add_right_binary(tkn_type, node, lexer, parser);
+	Ast_node* right = node->sub->alt_sub;
+	if(compare_types(left->sub->alt_sub, right) != Type_compare::B_subset_A)
+	    lexer.parsing_error(right->tkn, "This type is not a subset of the type in the previous declaration.");
+	
+	node_delete(left->sub->alt_sub);
+	left->sub->alt_sub = node;
+	return left;
+    }
+    else {
+	lexer.parsing_error(left->tkn, "Expected a declaration or an identifier, but got '%'", get_token_name_str(left->tkn.type).c_str());
+	return node;
+    }
 }
 
 Ast_node *led_dot(LED_ARGS)

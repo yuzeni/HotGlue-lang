@@ -93,7 +93,7 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     table[tkn_last]        = {0, 14, nud_right};
     table[tkn_from]        = {15, 14, nud_error, led_normal};
     table[tkn_where]       = {15, 14, nud_error, led_normal};
-
+    
     /* grouping */
     table['(']             = {15, 0, nud_bracket, led_parenthesis};
     table['[']             = {15, 0, nud_bracket, led_bracket};
@@ -110,6 +110,7 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     /* signifiers */
     table[tkn_include]     = {0, 17, nud_right};
     table['|']             = {0, 17, nud_right};//nud_ident_flag};
+    table['$']             = {0, 17, nud_right};
     table[tkn_extern]      = {0, 17, nud_right};//nud_ident_flag};
     table[tkn_exread]      = {0, 17, nud_right};//nud_ident_flag};
     table[tkn_exwrite]     = {0, 17, nud_right};//nud_ident_flag};
@@ -120,11 +121,21 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     return table;
 }
 
-static const std::array<Semantic_code, tkn_SIZE> tkn_semantics_table = get_tkn_semantics_table();
+inline constexpr auto tkn_semantics_table = get_tkn_semantics_table();
 
 bool tkn_legal_in_global_space(Token_enum type);
 
 bool is_object_type(Type_enum t);
 
-Type_enum eval_type_of_expression(Ast_node* node);
-bool is_any_type(Ast_node *node);
+bool is_base_type_integer(Type_enum type);
+bool is_base_type_floating_point(Type_enum type);
+
+enum class Type_compare {
+    Equal,
+    Intersecting,
+    Disjoint,
+    B_subset_A,
+    A_subset_B
+};
+
+Type_compare compare_types(Ast_node* node_a, Ast_node* node_b);

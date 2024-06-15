@@ -21,7 +21,7 @@ exobj: {
 Time: u64 // in nanoseconds
 Second: u64: 10**9
 
-in_range: (x, a, b) -> { bool: this: x >= a && x <= b }
+in_range: (x, a, b) -> { x >= a && x <= b } // the return type will be infered.
 
 Image: u32[width, height]
 
@@ -124,7 +124,7 @@ advance_lbm_fluid: (fluid: lbm_fluid req Time from this.attribs == fluid.Time)
 get_cc_count: (fluid: lbm_fluid)
 {
     meshes: Mesh[]: Mesh from all where first id from this.\all <= fluid.id_interac_list && first Time from Mesh\all == fluid.Time)
-    fluid.attribs.CC_count: 0
+    fluid.attribs.CC_count = 0
     
     expand (mesh: Mesh: meshes) {
         funCUDA get_cc_count(mesh)(fluid)
@@ -150,13 +150,13 @@ rasterizer: Renderer: (frame_buffer: Frame
                        mesh: Mesh req this\Time == frame_buffer.Time)
 {
     funCUDA mesh_rasterizer(frame_buffer, mesh)
-} -> {frame_buffer}
+} -> {frame_buffer, mesh}
 
 fluid_Renderer: (frame_buffer: Frame
 		 fluid: lbm_fluid req this.attribs.DDF\Time == frame_buffer.Time)
 {
     funCUDA lbm_fluid_renderer(frame_buffer, using fluid.attribs._ DDF, r_opacity, r_opacity_fade, r_ray_step_size, r_rgb_color_scheme)(fluid)
-} -> { frame_buffer !-> rasterizer }
+} -> { frame_buffer !-> rasterizer, fluid }
 
 Unit: {value: Numeric, unit: str}
 

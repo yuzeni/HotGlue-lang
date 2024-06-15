@@ -73,7 +73,7 @@ enum Token_enum : uint32_t {
     tkn_include,
     // helpers
     tkn_size,
-
+    
     /* mutliple char operators */
 
     tkn_return,

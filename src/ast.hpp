@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <array>
 
 #include "lexer.hpp"
 
@@ -12,6 +13,7 @@ enum Type_enum : uint16_t {
     T_Type_Object,
     T_Function_Object,
     T_Data_Object,
+    T_Declared_Object,
     T_Array,
     
     T_s8,
@@ -38,10 +40,35 @@ enum Type_enum : uint16_t {
     
 };
 
+struct Min_Max {
+    int64_t min;
+    uint64_t max;
+};
+
+consteval std::array<Min_Max, T_SIZE> get_type_num_limits_table()
+{
+    std::array<Min_Max, T_SIZE> table;
+    table.fill({0,0});
+    table[T_s8]  = {INT8_MIN, INT8_MAX};
+    table[T_s16] = {INT16_MIN, INT16_MAX};
+    table[T_s32] = {INT32_MIN, INT32_MAX};
+    table[T_s64] = {INT64_MIN, INT64_MAX};
+    table[T_u8]  = {0, UINT8_MAX};
+    table[T_u16] = {0, UINT16_MAX};
+    table[T_u32] = {0, UINT32_MAX};
+    table[T_u64] = {0, UINT64_MAX};
+    return table;
+}		 
+
+inline constexpr auto Type_num_limits_table = get_type_num_limits_table();
+
 enum Type_flags : uint32_t {
     TF_None           = 0,
     TF_Depends_on_all = 1,
     TF_Complete_const = 1 << 1,
+    TF_Overdefined    = 1 << 2,
+    TF_Defined        = 1 << 3,
+    TF_Underdefined   = 1 << 4,
 };
 
 static const char *type_enum_name_table[T_SIZE] {
@@ -120,9 +147,9 @@ typedef uint64_t Hash;
 
 struct Ast {
 
-    Hash find_ident_in_scope(Ast_node* scope_super, Ast_node *ident);
-    Hash find_ident(Ast_node* scope_super, Ast_node* node);
-    Hash add_ident(Ast_node* node, Hash scope_hash);
+    Hash find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super);
+    Hash find_ident(Ast_node* node, Ast_node* scope_super);
+    Hash add_ident(Ast_node* ident_node, Ast_node* scope_super);
 
     void print(Print_ast_enum config = Print_ast_enum(PN_SHOW_CONTENT)) const; // | PN_SUPER
     void print_node(const Ast_node* node, Print_ast_enum config, int depth = 0) const;

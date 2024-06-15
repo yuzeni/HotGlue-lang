@@ -3,8 +3,10 @@
 *** Object Declaration
 - An object is declared using ~ident: description~, within any scope.
 - Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
-  For example ~a: u32: 363~ is well defined and ~a: u32: u64~ won't compile.
-  
+  For example ~a: u64: u32: 5~ is well defined and ~a: u32: u64: 3~ isn't.
+  - However, the type of ~ident~ will still be ~descr_1~ and the value of ~ident~ will be ~descr_N~.
+    All intermediate descriptions, are simple there for ensuring the inequality above.
+
 **** Arrays
 - Declare an array using ~ident : description[x]~ where ~x > 0~. ~x~ can be entirely excluded, to declare a
   one dimensional array of unspecified length.
@@ -68,9 +70,11 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 **** ~procedure~
 - Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~ ([[*Procedures][Procedures]]),
   which were not declared inside the funciton object, or passed in as argument.
-****  ~object~
-- Function Objects return the Data Object defined in their ~->{}~ structure, if provided with the correct arguments,
-  using ~funv_obj(param_1, param_2, ...)~.
+**** ~object~
+- Function Objects return the Data Object defined or mentioned in their ~->{}~ structure, if provided with the
+  correct arguments, using ~funv_obj(param_1, param_2, ...)~.
+- ~object~ can also be an unnamed object, like the result of an expression. For example ~->{a + b}~.
+- All objects which are passed in ~args~, but not returned in ~object~, will be consumed/lost.
 ***** ~to~
 - Use the ~object_A to function_object_B~ to force a concatination of the current function object
   to ~function_object_B~, where ~object_A~ is an argument to ~function_object_B~.
@@ -90,6 +94,7 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 - A scope is the whole description of an object definition.
 - Objects in enclosing scopes can be accessed from within the enclosed scope, if they were declared before that scope.
 - The ~this~ keyword can be used in place of the identifier of the current scope.
+- Scopes are produced by [[*Object Declaration][declarations]], [[*The ~expand~ Structure][expands]] and [[*The ~trigger~ Keyword][triggers]].
   
 ** Types
 - All objects are types, but not all types are objects. Types become objects, as soon as they have a
@@ -175,6 +180,7 @@ These work *only on Objects*.
 - A not completely defined ~ident~ object, would also be a valid set (for example ~t: u64~). Using ~req~ the set can be
   constrained without specifying an explicit set. For example ~expand (t: u64 req t < 10000) { do_something(t)}~, would
   expand over all integers in the range [0, 10000).
+- The ~expand~ structure will form its own [[*Scopes][scope]].
   
 *** The ~using~ Keyword
 - Use ~using expression~ where expression contains ~_~ at least once, inside a scope, to replace all
