@@ -127,8 +127,8 @@ bool tkn_legal_in_global_space(Token_enum type);
 
 bool is_object_type(Type_enum t);
 
-bool is_base_type_integer(Type_enum type);
-bool is_base_type_floating_point(Type_enum type);
+constexpr bool is_base_type_integer(Type_enum type) { return type >= T_s8 && type <= T_u64; }
+constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
 
 enum class Type_compare {
     Equal,

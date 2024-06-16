@@ -21,6 +21,7 @@ exobj: {
 Time: u64 // in nanoseconds
 Second: u64: 10**9
 
+
 in_range: (x, a, b) -> { x >= a && x <= b } // the return type will be infered.
 
 Image: u32[width, height]

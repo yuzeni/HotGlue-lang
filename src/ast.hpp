@@ -57,6 +57,11 @@ consteval std::array<Min_Max, T_SIZE> get_type_num_limits_table()
     table[T_u16] = {0, UINT16_MAX};
     table[T_u32] = {0, UINT32_MAX};
     table[T_u64] = {0, UINT64_MAX};
+    // for floating point formants, there largest representable integer is stored.
+    table[T_f8]  = {-16, 16}; // 2^4
+    table[T_f16] = {-2048, 2048}; // 2^11
+    table[T_f32] = {-16777216, 16777216}; // 2^24
+    table[T_f64] = {-9007199254740992, 9007199254740992}; // 2^53
     return table;
 }		 
 
