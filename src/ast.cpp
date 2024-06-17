@@ -35,7 +35,7 @@ Ast_node *node_delete(Ast_node *node)
 
 Hash Ast::find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super)
 {
-    HG_DEB_assert(scope_super->tkn.type == tkn_ident, "expected tkn_ident");
+    HG_DEB_assert(scope_super->tkn.type == tkn_ident || scope_super->tkn.type == tkn_global_scope, "expected tkn_ident");
     HG_DEB_assert(ident_node->tkn.type == tkn_ident, "expected tkn_ident");
     
     Hash id = scope_super->id;

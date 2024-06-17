@@ -2,12 +2,14 @@
 type B: 4 // i32: 4 // this should not compile
 type A: u64: B
 
-AoS C: {
+type C: {
     D: i32
     E: i32
 }
 
 F: C {1, 2}
+
+F.E = 2
 
 G: C {E:1, D:2}
 

@@ -96,9 +96,11 @@ Ast_node *nud_error(NUD_ARGS)
 
 Ast_node *nud_ident(NUD_ARGS)
 {
-    Ast_node* node = nud_arg(PASS_NUD_ARGS);
-    // lookup declare type of identifier
-    // node->type_result = ;
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    lexer.next_token();
+    node->id = parser.ast.find_ident_in_scope(node, parser.scope_info.scope_ident);
+    if(node->id)
+	node->type_result = T_Declared_Object;
     return node;
 }
 
@@ -505,22 +507,38 @@ Ast_node *led_declare(LED_ARGS)
 
 Ast_node *led_dot(LED_ARGS)
 {
-    Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
     lexer.next_token();
 
     add_single_sub(node, left);
+
+    if(left->tkn.type == tkn_placeholder)
+	left->type_result = T_Declared_Object;
     
-    if(!is_reference_tkn(left->tkn.type)) {
-	lexer.parsing_error(left->tkn, "Expected an identifier, 'this' or a placeholder, but got '%s'.", get_token_name_str(left->tkn.type).c_str());
-	std::cout << get_token_name_str(node->tkn.type) << '\n';
+    if(left->type_result != T_Declared_Object) {
+	parser.type_error(left, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Declared_Object], type_enum_name_table[left->type_result]);
 	return node;
     }
-
-    // Scope_info enclosing_scope = parser.scope_info.next_scope(left, hash_string_view(left->tkn.sv, parser.scope_info.scope_hash));
-
-    get_and_add_right_binary(tkn_type, node, lexer, parser);
-
-    // parser.scope_info.restore_scope(enclosing_scope);
+    HG_DEB_assert(left->id, "id must be defined.");
+    
+    Scope_info this_scope = parser.scope_info.next_scope(parser.ast.identifier_set.at(left->id));
+    {
+	get_and_add_right_binary(tkn_type, node, lexer, parser);
+	
+	Ast_node* right = node->sub->alt_sub;
+	if(right->type_result == T_Declared_Object) {
+	    HG_DEB_assert(right->id, "id must be defined.");
+	    node->id = parser.ast.find_ident_in_scope(right, parser.scope_info.scope_ident);
+	}
+	else {
+	    if(right->tkn.type == tkn_ident)
+		lexer.parsing_error(right->tkn, "The identifier is not declared in this scope.");
+	    else
+		parser.type_error(right, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Declared_Object], type_enum_name_table[right->type_result]);
+	}
+    }
+    parser.scope_info.restore_scope(this_scope);
+    
     return node;
 }
 

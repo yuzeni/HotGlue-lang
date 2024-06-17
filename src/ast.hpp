@@ -98,18 +98,19 @@ consteval std::array<Min_Max, T_SIZE> get_type_num_limits_table()
 inline constexpr auto Type_num_limits_table = get_type_num_limits_table();
 
 enum Type_flags : uint32_t {
-    TF_None           = 0,
-    TF_Depends_on_all = 1,
-    TF_Complete_const = 1 << 1,
-    TF_Overdefined    = 1 << 2,
-    TF_Defined        = 1 << 3,
-    TF_Underdefined   = 1 << 4,
-    TF_Extern         = 1 << 5,
-    TF_Exread         = 1 << 6,
-    TF_Exwrite        = 1 << 7,
-    TF_AoS            = 1 << 8,
-    TF_SoA            = 1 << 9,
-    TF_Pure_type      = 1 << 10,
+    TF_None            = 0,
+    TF_Depends_on_all  = 1,
+    TF_Complete_const  = 1 << 1,
+    TF_Overdefined     = 1 << 2,
+    TF_Defined         = 1 << 3,
+    TF_Underdefined    = 1 << 4,
+    TF_Extern          = 1 << 5,
+    TF_Exread          = 1 << 6,
+    TF_Exwrite         = 1 << 7,
+    TF_AoS             = 1 << 8,
+    TF_SoA             = 1 << 9,
+    TF_Pure_type       = 1 << 10,
+    TF_Has_placeholder = 1 << 11,
 };
 
 struct Ast_node {
