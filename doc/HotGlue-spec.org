@@ -2,7 +2,7 @@
 ** Objects
 *** Object Declaration
 - An object is declared using ~ident: description~, within any scope.
-- Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ > ~descr_2~ > ~...~.
+- Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ >= ~descr_2~ >= ~...~.
   For example ~a: u64: u32: 5~ is well defined and ~a: u32: u64: 3~ isn't.
   - However, the type of ~ident~ will still be ~descr_1~ and the value of ~ident~ will be ~descr_N~.
     All intermediate descriptions, are simple there for ensuring the inequality above.
@@ -15,12 +15,13 @@
   
 **** Object Signifiers
 Put them in front of the identifier: ~signifier ident: description~.
-| $\vert{}$      | The object will stay constant, once defined.                                           |
-| ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.          |
-| ~exr~          | The object is accessable from inside HotGlue, but will be read externally.             |
-| ~exw~          | As above, but will be written to externally.                                           |
-| ~exlayout SoA~ | If the object is a HotGlue array of external objects, the external layout will be SoA. |
-| ~exlayout AoS~ | As above, but the layout will be AoS.                                                  |
+| ~type~         | The object is just a type, it can't be modified, and won't be part of the data in the object. |
+| $\vert{}$      | The object will stay constant, once defined.                                                  |
+| ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.                 |
+| ~exr~          | The object is accessable from inside HotGlue, but will be read externally.                    |
+| ~exw~          | As above, but will be written to externally.                                                  |
+| ~exlayout SoA~ | If the object is a HotGlue array of external objects, the external layout will be SoA.        |
+| ~exlayout AoS~ | As above, but the layout will be AoS.                                                         |
 
 **** On Requirements
 - Pose requirements on the creation of objects using ~ident: description req requirement~.
@@ -46,8 +47,8 @@ There are two types of objects, data objects and function objects.
 - Any object inside it, is undefined.
 - There are any variables either without concrete values or without the ~extern~ signifier.
 ***** Examples
-| ~a: s32~        | undefined |
-| ~b: s32: 345~   | defined   |
+| ~a: i32~        | undefined |
+| ~b: i32: 345~   | defined   |
 | ~c: { a b }~    | undefined |
 | ~extern d: f64~ | defined   |
 | ~e:(){}->{4}~   | defined   |
@@ -81,6 +82,8 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
   
 *** Object instantiation
 - To create a data object (or type) ~A~ *from another data object* ~B~, simply declare ~A: B~.
+  Use ~A: B { item_in_B: 5 }~ to access and further narrow the definition of the objects inside the instance of ~B~
+  which then becomes ~A~.
 - To create a data object (or type) ~A~ *from a function object* ~B~, use ~A: B(args)~, where ~args~
   is a list of the required arguments, which are again seperated by semicolons.
 - It is not possible to create a function object from a function object (as in currying).
@@ -97,8 +100,9 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 - Scopes are produced by [[*Object Declaration][declarations]], [[*The ~expand~ Structure][expands]] and [[*The ~trigger~ Keyword][triggers]].
   
 ** Types
-- All objects are types, but not all types are objects. Types become objects, as soon as they have a
-  clear representation in memory.
+- Declare types using the ~type~ signifier.
+- Types become objects, as soon as they have a clear representation in memory,
+  unless they were declared with the ~type~ signifier.
 - Types can be [[*Boolean set ops][compared]].
 - There are types of function objects or data objects.
 - [[*Examples][Examples]], everything which is *undefined* is a type, and not an object.
@@ -229,15 +233,21 @@ These work *only on Objects*.
   HotGlue will figure out how to obtain the objects, which are used in the procedure.
 - Usually calls an external procedure, which takes over control.
 - The external procedure may terminate HotGlue, or change objects with the ~exw~ signifier.
+  
+** The ~exit~ Keyword
+- Use ~exit~ to terminate the script. Any HotGlue file without the exit keyword will execute in interactive mode,
+  until the user enters the ~exit~ keyword.
+- If there is no ~exit~ in a HotGlue file, the compiler won't know, which statements may follow and therefore which
+  objects should be kept around. Therefore, it can't free any memory resources.
 
 ** Base Types
 - The native types of HotGlue.
 | *HotGlue-type* | *as C-type*              | *as CUDA-type* | *as OpenCl-type* |
 |----------------+--------------------------+----------------+------------------|
-| ~s8~           | ~signed char~            | =              | =                |
-| ~s16~          | ~signed short~           | =              | =                |
-| ~s32~          | ~int~                    | =              | =                |
-| ~s64~          | ~long long int~          | =              | =                |
+| ~i8~           | ~signed char~            | =              | =                |
+| ~i16~          | ~signed short~           | =              | =                |
+| ~i32~          | ~int~                    | =              | =                |
+| ~i64~          | ~long long int~          | =              | =                |
 | ~u8~           | ~unsinged char~          | =              | =                |
 | ~u16~          | ~unsigned short~         | =              | =                |
 | ~u32~          | ~unsigned int~           | =              | =                |

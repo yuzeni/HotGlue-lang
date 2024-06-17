@@ -10,12 +10,11 @@
 
 #include "log_and_debug.hpp"
 
-Scope_info Scope_info::next_scope(Ast_node* scope_ident, uint64_t scope_hash)
+Scope_info Scope_info::next_scope(Ast_node* scope_ident)
 {
     Scope_info old = *this;
     this->depth++;
     this->scope_ident = scope_ident;
-    this->scope_hash = scope_hash;
     return old;
 }
 
@@ -25,7 +24,7 @@ Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rb
     Semantic_code tkn_sema = tkn_semantics_table[lexer.tkn_at(0).type];
     Ast_node* left = nullptr;
     left = tkn_sema.nud(lexer.tkn_at(0).type, lexer, parser, nullptr, super);
-    if(!lexer.not_eof() || !left)
+    if(!lexer.not_eof() || !left || parser.early_exit)
 	return left;
 
     tkn_sema = tkn_semantics_table[lexer.tkn_at(0).type];
@@ -46,7 +45,7 @@ Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rb
 
 static void build_ast(Lexer &lexer, Parser &parser)
 {
-    parser.scope_info = Scope_info{};
+    parser.scope_info = Scope_info{&parser.ast.global_scope};
     lexer.next_token();
     Ast_node* prev_alt;
     

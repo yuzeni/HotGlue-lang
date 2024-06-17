@@ -16,34 +16,38 @@
 #include "ast.hpp"
 #include "log_and_debug.hpp"
 
-struct Scope_info {
+struct Scope_info
+{
+    Scope_info(Ast_node* first_scope_ident) : scope_ident(first_scope_ident) {}
     
-    Scope_info next_scope(Ast_node* scope_ident, uint64_t scope_hash);
+    Scope_info next_scope(Ast_node* scope_ident);
     void restore_scope(Scope_info scope_info) {*this = scope_info;}
     
     int depth = 0;
     Ast_node* scope_ident = nullptr;
-    uint64_t scope_hash = utils::default_str_hash_value;
 };
 
-class Parser {
+class Parser
+{
 public:
+    Parser() : ast{}, scope_info{&ast.global_scope} {}
+    
     void parse_file(const char* file_path);
     void parse_string(const char* string);
-
-    void type_error(Ast_node* node, const char* msg);
-
+    void exit() { early_exit = true; }
+    
     template<typename... Args>
     void type_error(Ast_node* node, const char* msg, Args... args)
     {
 	lexer.print_error(node->tkn.ptr, HG_err::type, msg, args...);
 	++type_error_cnt;
     }
-    int type_error_cnt = 0;
     
-    Ast ast{};
+    int type_error_cnt = 0;
+    Ast ast;
+    bool early_exit = false;
     Scope_info scope_info;
-
+    
 private:
     Lexer lexer{}; // LF_PRINT_TOKENS
 };

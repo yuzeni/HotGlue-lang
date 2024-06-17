@@ -1,0 +1,19 @@
+
+type B: 4 // i32: 4 // this should not compile
+type A: u64: B
+
+AoS C: {
+    D: i32
+    E: i32
+}
+
+F: C {1, 2}
+
+G: C {E:1, D:2}
+
+type H: (I: i8) -> {
+    D: I // u8: I this should not compile
+    E: i16: I
+}
+
+J: H(42)

@@ -15,7 +15,7 @@ bool compare_ident_nodes(Ast_node *id_a, Ast_node *id_b)
     return true;
 }
 
-void super_delete(Ast_node *node)
+static void super_delete(Ast_node *node)
 {
     if(node->sub)
 	super_delete(node->sub);
@@ -85,7 +85,7 @@ Hash Ast::find_ident(Ast_node *node, Ast_node* scope_super)
 // returns the idents new id otherwise, it will also write id to that node.
 Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
 {
-    HG_DEB_assert(node->tkn.type == tkn_ident, "expected tkn_ident");
+    HG_DEB_assert(ident_node->tkn.type == tkn_ident, "expected tkn_ident");
     
     Hash id = scope_super->id;
     id = hash_char('.', id);
@@ -120,7 +120,7 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
     for(int i = 0; i < depth; ++i)
 	std::cout << "   ";
     
-    if(config & PN_SHOW_CONTENT) {
+    if(config & PN_Content) {
 	switch(node->tkn.type) {
 	case tkn_ident:
 	case tkn_string: std::cout << node->tkn.sv; break;
@@ -132,8 +132,37 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
     else {
 	std::cout << HG_BRIGHT_MAGENTA_COLOR << get_token_name_str(node->tkn.type) << HG_END_COLOR;
     }
+
+    if(config & PN_Type_flags) {
+	std::cout << HG_BRIGHT_BLUE_COLOR;
+	if(node->type_flags)
+	    std::cout << " TFs: ";
+	if(node->type_flags & TF_Depends_on_all)
+	    std::cout << "Depends_on_all ";
+	if(node->type_flags & TF_Complete_const)
+	    std::cout << "Complete_const ";
+	if(node->type_flags & TF_Overdefined)
+	    std::cout << "Overdefined ";
+	if(node->type_flags & TF_Defined)
+	    std::cout << "Defined ";
+	if(node->type_flags & TF_Underdefined)
+	    std::cout << "Underdefined ";
+	if(node->type_flags & TF_Extern)
+	    std::cout << "Extern ";
+	if(node->type_flags & TF_Exread)
+	    std::cout << "Exread ";
+	if(node->type_flags & TF_Exwrite)
+	    std::cout << "Exwrite ";
+	if(node->type_flags & TF_AoS)
+	    std::cout << "AoS ";
+	if(node->type_flags & TF_SoA)
+	    std::cout << "SoA ";
+	if(node->type_flags & TF_Pure_type)
+	    std::cout << "Pure_type ";
+	std::cout << HG_END_COLOR;
+    }
     
-    if((config & PN_SUPER) && node->super)
+    if((config & PN_Super) && node->super)
 	std::cout << HG_BRIGHT_GREEN_COLOR << " S: " << get_token_name_str(node->super->tkn.type) << HG_END_COLOR;
     
     std::cout << '\n';

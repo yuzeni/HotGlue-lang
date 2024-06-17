@@ -96,10 +96,10 @@ static const char *token_name_table[tkn_SIZE - 256]{
     /* keywords */
     
     // base types
-    "s8",
-    "s16",
-    "s32",
-    "s64",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
     "u8",
     "u16",
     "u32",
@@ -115,13 +115,15 @@ static const char *token_name_table[tkn_SIZE - 256]{
     "this",
     "all",
     "placeholder",
-    // external business
+    // signifiers
+    "type",
     "extern",
     "exr",
     "exw",
     "exlayout",
     "AoS",
     "SoA",
+    // external function calls
     "funC",
     "funCUDA",
     "fun_OCL",
@@ -138,6 +140,8 @@ static const char *token_name_table[tkn_SIZE - 256]{
     "do",
     "to",
     "include",
+    "exit",
+    // helpers
     "size",
 
     /* mutliple char operators */
@@ -185,10 +189,10 @@ Token_enum keyword_compare(const std::string_view sv)
 	return tkn_ident;
 
     switch(hash_string_view(sv)) {
-    case cte_hash_c_str("s8"): return tkn_s8;
-    case cte_hash_c_str("s16"): return tkn_s16;
-    case cte_hash_c_str("s32"): return tkn_s32;
-    case cte_hash_c_str("s64"): return tkn_s64;
+    case cte_hash_c_str("i8"): return tkn_i8;
+    case cte_hash_c_str("i16"): return tkn_i16;
+    case cte_hash_c_str("i32"): return tkn_i32;
+    case cte_hash_c_str("i64"): return tkn_i64;
     case cte_hash_c_str("u8"): return tkn_u8;
     case cte_hash_c_str("u16"): return tkn_u16;
     case cte_hash_c_str("u32"): return tkn_u32;
@@ -202,6 +206,7 @@ Token_enum keyword_compare(const std::string_view sv)
     case cte_hash_c_str("ident"): return tkn_ident_type;
     case cte_hash_c_str("symbol"): return tkn_symbol;
     case cte_hash_c_str("this"): return tkn_this;
+    case cte_hash_c_str("type"): return tkn_is_type;
     case cte_hash_c_str("extern"): return tkn_extern;
     case cte_hash_c_str("exr"): return tkn_exread;
     case cte_hash_c_str("exw"): return tkn_exwrite;
@@ -223,6 +228,7 @@ Token_enum keyword_compare(const std::string_view sv)
     case cte_hash_c_str("do"): return tkn_do;
     case cte_hash_c_str("to"): return tkn_to;
     case cte_hash_c_str("include"): return tkn_include;
+    case cte_hash_c_str("exit"): return tkn_exit;
     case cte_hash_c_str("size"): return tkn_size;
     default: return tkn_ident;
     }

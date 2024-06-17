@@ -6,11 +6,11 @@ my_cuda: extern include "src/some_cuda_kernels.cu"
 
 robots: include "robots.hg"
 
-Integer: {s8, s16, s32, s64, u8, u16, u32, u64}
-Numeric: {s8, s16, s32, s64, u8, u16, u32, u64, f8, f16, f32, f64}
-Real: {f8, f16, f32, f64}
+type Integer: {i8, i16, i32, i64, u8, u16, u32, u64}
+type Numeric: {i8, i16, i32, i64, u8, u16, u32, u64, f8, f16, f32, f64}
+type Real: {f8, f16, f32, f64}
 
-exobj: {
+type exobj: {
     id: u64
     id_interact_list: u64[]
     Time
@@ -18,38 +18,37 @@ exobj: {
     attribs
 }
 
-Time: u64 // in nanoseconds
-Second: u64: 10**9
-
+type Time: u64 // in nanoseconds
+type Second: u64: 10**9
 
 in_range: (x, a, b) -> { x >= a && x <= b } // the return type will be infered.
 
-Image: u32[width, height]
+type Image: u32[width, height]
 
-Frame: (width: u32, height: u32, Time)
+type Frame: (width: u32, height: u32, Time)
 -> {
     extern image: Image
     extern depth_buffer: u32[width, height]
     Time
 }
 
-Mesh: (n_attribs: u32)
+type Mesh: (n_attribs: u32)
 -> {
     vertices: f32[ , n_attribs]
     indices: u32[ , 3]
 }
 
 // a valid instance of lbm_fluid will exist, when everything is fully defined
-lbm_fluid: exobj: {
+type lbm_fluid: exobj {
 
-    // it is okay to "overdefine" things
-    DOM_BDRYS: u8: {
+    // they are just here to limit their scope.
+    type DOM_BDRYS: u8: {
         OPEN: 0
 	BOUNCE_BACK: 1
 	FIXED_VELO: 2
     }
     
-    COLLISION_OPERATOR: u8: { SRT:0 MRT:1 CM_MRT:2 }
+    type COLLISION_OPERATOR: u8: { SRT:0 MRT:1 CM_MRT:2 }
     
     attribs: {
     
@@ -59,7 +58,7 @@ lbm_fluid: exobj: {
         | si_max_velo: f32 req in_range(this, 0, 60)
         | lbm_max_velo: f32 req in_range(this, 1.5, 2.2)
         | si_kinematic_visc: Unit(f32, "sqr_m_per_s")
-        | domain_init: u8: 1
+        | domain_init: u8 = 1
         | collision_operator: COLLISION_OPERATOR
         | lattice_store_n_buffers: u8: {1,2}
         | lbm_descrete_velos: u32
@@ -82,11 +81,11 @@ lbm_fluid: exobj: {
         extern CCQ: { lattice_intersec_storage[CC_count * lbm_descrete_velos], Time }
         exw CC_count: { u64, Time }
         extern CFlags: u8[lbm_size, lbm_descrete_velos]
-        timestep: u64: 0 // external functions actually dont't need to know the timestep
+        timestep: u64: 0 // external functions actually don't need to know the timestep
     }
 }
 
-o69: lbm_fluid: {
+o69: lbm_fluid {
 
     id: 69
     id_interact_list: {234, 34564, 123}
@@ -145,7 +144,7 @@ calc_ccq_intersec: (fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Tim
     fluid.attribs.CCQ.time = fluid.Time
 } -> {fluid, meshes}
 
-Renderer: (Frame:this, _) {_} -> { Frame, _ }
+type Renderer: (Frame:this, _) {_} -> { Frame, _ }
 
 rasterizer: Renderer: (frame_buffer: Frame
                        mesh: Mesh req this\Time == frame_buffer.Time)
@@ -170,3 +169,5 @@ do {
         save_image("frame/path.png", last Frame(Time: t * Second) from all Renderer)
     }
 }
+
+exit

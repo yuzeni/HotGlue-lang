@@ -5,6 +5,7 @@
 #include <array>
 
 #include "lexer.hpp"
+#include "utils.hpp"
 
 enum Type_enum : uint16_t {
     T_None = 0,
@@ -16,10 +17,10 @@ enum Type_enum : uint16_t {
     T_Declared_Object,
     T_Array,
     
-    T_s8,
-    T_s16,
-    T_s32,
-    T_s64,
+    T_i8,
+    T_i16,
+    T_i32,
+    T_i64,
     T_u8,
     T_u16,
     T_u32,
@@ -40,6 +41,35 @@ enum Type_enum : uint16_t {
     
 };
 
+inline const char *type_enum_name_table[T_SIZE] {
+    "None",
+    "All",
+    "Unnamed_Object",
+    "Type_Object",
+    "Function_Object",
+    "Data_Object",
+    "Declared_Object",
+    "Array",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "f8",
+    "f16",
+    "f32",
+    "f64",
+    "str",
+    "bool",
+    "ident_type",
+    "symbol",
+    "this",
+    "placeholder"
+};
+
 struct Min_Max {
     int64_t min;
     uint64_t max;
@@ -49,10 +79,10 @@ consteval std::array<Min_Max, T_SIZE> get_type_num_limits_table()
 {
     std::array<Min_Max, T_SIZE> table;
     table.fill({0,0});
-    table[T_s8]  = {INT8_MIN, INT8_MAX};
-    table[T_s16] = {INT16_MIN, INT16_MAX};
-    table[T_s32] = {INT32_MIN, INT32_MAX};
-    table[T_s64] = {INT64_MIN, INT64_MAX};
+    table[T_i8]  = {INT8_MIN, INT8_MAX};
+    table[T_i16] = {INT16_MIN, INT16_MAX};
+    table[T_i32] = {INT32_MIN, INT32_MAX};
+    table[T_i64] = {INT64_MIN, INT64_MAX};
     table[T_u8]  = {0, UINT8_MAX};
     table[T_u16] = {0, UINT16_MAX};
     table[T_u32] = {0, UINT32_MAX};
@@ -74,34 +104,12 @@ enum Type_flags : uint32_t {
     TF_Overdefined    = 1 << 2,
     TF_Defined        = 1 << 3,
     TF_Underdefined   = 1 << 4,
-};
-
-static const char *type_enum_name_table[T_SIZE] {
-    "None"
-    "All"
-    "Unnamed_Object"
-    "Type_Object"
-    "Function_Object"
-    "Data_Object"
-    "Array"
-    "s8"
-    "s16"
-    "s32"
-    "s64"
-    "u8"
-    "u16"
-    "u32"
-    "u64"
-    "f8"
-    "f16"
-    "f32"
-    "f64"
-    "str"
-    "bool"
-    "ident_type"
-    "symbol"
-    "this"
-    "placeholder"
+    TF_Extern         = 1 << 5,
+    TF_Exread         = 1 << 6,
+    TF_Exwrite        = 1 << 7,
+    TF_AoS            = 1 << 8,
+    TF_SoA            = 1 << 9,
+    TF_Pure_type      = 1 << 10,
 };
 
 struct Ast_node {
@@ -120,9 +128,6 @@ struct Ast_node {
     uint64_t count_subs(Ast_node* node) const;
 };
 
-// don't call this directly (UNTESTED)
-void super_delete(Ast_node *node);
-
 // call this to delete an Ast_node (UNTESTED)
 Ast_node *node_delete(Ast_node *node);
 
@@ -136,8 +141,9 @@ struct Identifier_info {
 };
 
 enum Print_ast_enum : uint64_t {
-    PN_SHOW_CONTENT = 1,
-    PN_SUPER        = 1 << 1,
+    PN_Content    = 1,
+    PN_Super      = 1 << 1,
+    PN_Type_flags = 1 << 2,
 };
 
 
@@ -152,15 +158,20 @@ typedef uint64_t Hash;
 
 struct Ast {
 
+    Ast() : global_scope(Token{tkn_global_scope, nullptr})
+    {
+	global_scope.id = utils::default_str_hash_value;
+    }
+
     Hash find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super);
     Hash find_ident(Ast_node* node, Ast_node* scope_super);
     Hash add_ident(Ast_node* ident_node, Ast_node* scope_super);
 
-    void print(Print_ast_enum config = Print_ast_enum(PN_SHOW_CONTENT)) const; // | PN_SUPER
+    void print(Print_ast_enum config = Print_ast_enum(PN_Content | PN_Type_flags)) const; // | PN_Super
     void print_node(const Ast_node* node, Print_ast_enum config, int depth = 0) const;
 
     // the root node
-    Ast_node global_scope{Token{tkn_global_scope, nullptr}};
+    Ast_node global_scope;
 
     // set of all identifiers. The hash is precomputed to ensure no hash collisions.
     // this is a form of 'string interning': https://en.wikipedia.org/wiki/String_interning

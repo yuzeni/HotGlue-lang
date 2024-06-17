@@ -19,8 +19,8 @@ consteval std::array<Type_compare, T_SIZE * T_SIZE> get_type_compare_table()
     table.fill(Type_compare::Disjoint);
 
     // NOTE: employs properties of the specific supported integer types.
-    for(uint16_t type_a = T_s8; type_a <= T_f64; ++type_a) {
-	for(uint16_t type_b = T_s8; type_b <= T_f64; ++type_b) {
+    for(uint16_t type_a = T_i8; type_a <= T_f64; ++type_a) {
+	for(uint16_t type_b = T_i8; type_b <= T_f64; ++type_b) {
 	    // all numeric types contain 0
 	    table[TC_TABLE_IDX(type_a, type_b)] = Type_compare::Intersecting;
 	    
@@ -58,5 +58,5 @@ static Type_compare compare_base_types(Type_enum type_a, Type_enum type_b)
 
 Type_compare compare_types(Ast_node *node_a, Ast_node *node_b)
 {
-    
+    return Type_compare::Disjoint;
 }

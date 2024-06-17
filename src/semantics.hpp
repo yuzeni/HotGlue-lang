@@ -3,6 +3,7 @@
 #include <array>
 
 #include "ast.hpp"
+#include "lexer.hpp"
 #include "tdop_functions.hpp"
 
 struct Semantic_code {
@@ -29,12 +30,13 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     table[tkn_true]        = {0, 0, nud_true};
     table[tkn_false]       = {0, 0, nud_false};
     table[tkn_placeholder] = {0, 0, nud_placeholder};
+    table[tkn_exit]        = {0, 0, nud_exit};
 
     /* base types */
-    table[tkn_s8]          = {0, 0, nud_types};
-    table[tkn_s16]         = {0, 0, nud_types};
-    table[tkn_s32]         = {0, 0, nud_types};
-    table[tkn_s64]         = {0, 0, nud_types};
+    table[tkn_i8]          = {0, 0, nud_types};
+    table[tkn_i16]         = {0, 0, nud_types};
+    table[tkn_i32]         = {0, 0, nud_types};
+    table[tkn_i64]         = {0, 0, nud_types};
     table[tkn_u8]          = {0, 0, nud_types};
     table[tkn_u16]         = {0, 0, nud_types};
     table[tkn_u32]         = {0, 0, nud_types};
@@ -108,6 +110,7 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     table['\\']            = {16, 16, nud_error, led_normal};
 
     /* signifiers */
+    table[tkn_is_type]        = {0, 17, nud_right};
     table[tkn_include]     = {0, 17, nud_right};
     table['|']             = {0, 17, nud_right};//nud_ident_flag};
     table['$']             = {0, 17, nud_right};
@@ -125,9 +128,15 @@ inline constexpr auto tkn_semantics_table = get_tkn_semantics_table();
 
 bool tkn_legal_in_global_space(Token_enum type);
 
+// parser semantics
+
+constexpr bool is_declare_signifier_tkn(Token_enum tkn) {return tkn == '|' || (tkn >= tkn_is_type && tkn <= tkn_SoA); }
+
+// type semantics
+
 bool is_object_type(Type_enum t);
 
-constexpr bool is_base_type_integer(Type_enum type) { return type >= T_s8 && type <= T_u64; }
+constexpr bool is_base_type_integer(Type_enum type) { return type >= T_i8 && type <= T_u64; }
 constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
 
 enum class Type_compare {

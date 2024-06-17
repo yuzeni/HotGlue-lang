@@ -28,10 +28,10 @@ enum Token_enum : uint32_t {
     /* keywords */
 
     // base types
-    tkn_s8,
-    tkn_s16,
-    tkn_s32,
-    tkn_s64,
+    tkn_i8,
+    tkn_i16,
+    tkn_i32,
+    tkn_i64,
     tkn_u8,
     tkn_u16,
     tkn_u32,
@@ -48,13 +48,15 @@ enum Token_enum : uint32_t {
     tkn_all,
     tkn_placeholder,
 
-    // external business
+    // signifiers
+    tkn_is_type,
     tkn_extern,
     tkn_exread,
     tkn_exwrite,
     tkn_exlayout,
     tkn_AoS,
     tkn_SoA,
+    // external function calls
     tkn_funC,
     tkn_funCUDA,
     tkn_fun_OCL,
@@ -71,6 +73,7 @@ enum Token_enum : uint32_t {
     tkn_do,
     tkn_to,
     tkn_include,
+    tkn_exit,
     // helpers
     tkn_size,
     

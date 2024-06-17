@@ -72,6 +72,17 @@ static bool get_and_add_next_sub(Token_enum tkn_type, Ast_node* node, Ast_node**
     return true;
 }
 
+static Ast_node* replace_node_with_single_sub(Ast_node *node)
+{
+    HG_DEB_assert(node->sub->alt_sub == nullptr, "node must only have a single sub");
+    Ast_node sub = *(node->sub);
+    delete node->sub;
+    Ast_node* super = node->super;
+    *node = sub;
+    node->super = super;
+    return node;
+}
+
 Ast_node *nud_error(NUD_ARGS)
 {
     lexer.parsing_error(lexer.tkn_at(0), "The token '%s' has no unary method.", get_token_name_str(tkn_type).c_str());
@@ -105,7 +116,7 @@ Ast_node *nud_int(NUD_ARGS)
 	}
     }
     else {
-	for(uint16_t type = T_s8; type < T_s64; ++type) {
+	for(uint16_t type = T_i8; type < T_i64; ++type) {
 	    if(lexer.tkn_at(0).i <= int64_t(Type_num_limits_table[type].max && lexer.tkn_at(0).i >= int64_t(Type_num_limits_table[type].min))) {
 		type_result = Type_enum(type);
 		break;
@@ -149,6 +160,14 @@ Ast_node *nud_false(NUD_ARGS)
 Ast_node *nud_placeholder(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_placeholder};
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_exit(NUD_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    parser.exit();
     lexer.next_token();
     return node;
 }
@@ -374,7 +393,7 @@ Ast_node *led_parenthesis(LED_ARGS)
 // TODO: maybe enhance!
 static bool is_type(Ast_node *node)
 {
-    return node->tkn.type == tkn_ident || (node->tkn.type >= tkn_s8 && node->tkn.type <= tkn_placeholder);
+    return node->tkn.type == tkn_ident || (node->tkn.type >= tkn_i8 && node->tkn.type <= tkn_placeholder);
 }
 
 Ast_node *led_bracket(LED_ARGS)
@@ -387,35 +406,99 @@ Ast_node *led_bracket(LED_ARGS)
     return node;
 }
 
+static Ast_node* handle_declare_signifiers(Ast_node* left, Lexer& lexer)
+{
+    // add signifier type flags
+
+    Type_flags type_flags = TF_None;
+    switch(left->tkn.type) {
+    case tkn_is_type:
+	type_flags = TF_Pure_type;
+	break;
+    case '|':
+	type_flags = TF_Complete_const;
+	break;
+    case tkn_extern:
+	type_flags = TF_Extern;
+	break;
+    case tkn_exread:
+	type_flags = TF_Exread;
+	break;
+    case tkn_exwrite:
+	type_flags = TF_Exwrite;
+	break;
+    case tkn_exlayout:
+	if(left->sub) {
+	    if(left->sub->tkn.type == tkn_AoS)
+		type_flags = TF_AoS;
+	    else if (left->sub->tkn.type == tkn_SoA)
+		type_flags = TF_SoA;
+	    else
+		lexer.parsing_error(left->sub->tkn, "Expected either token 'AoS' or 'SoA', but got '%s'.", get_token_name_str(left->sub->tkn.type).c_str());
+	    if(left->sub->sub)
+		left->sub = replace_node_with_single_sub(left->sub);
+	}
+	else {
+	    lexer.parsing_error(left->tkn, "Missing right argument for '%s'.", get_token_name_str(left->tkn.type).c_str());
+	}
+	break;
+    case tkn_AoS:
+    case tkn_SoA:
+	lexer.parsing_error(left->tkn, "You must put '%s' infront of memory layout specifiers.", get_token_name_str(tkn_exlayout).c_str());
+	break;
+    }
+	
+    if(left->sub) {
+	left = replace_node_with_single_sub(left);
+	left->type_flags = type_flags;
+    }
+    else {
+	lexer.parsing_error(left->tkn, "Expected an identifier after '%s'.", get_token_name_str(left->tkn.type).c_str());
+    }
+    return left;
+}
+
 // declarations open new scopes
 Ast_node *led_declare(LED_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
+
+    if(is_declare_signifier_tkn(left->tkn.type))
+	left = handle_declare_signifiers(left, lexer);
     
     add_single_sub(node, left);
 
+
     if(left->tkn.type == tkn_ident) {
-    
-	if(left->type_result == T_Declared_Object || parser.ast.add_ident(left, node) == 0)
+	if(left->type_result == T_Declared_Object || parser.ast.add_ident(left, parser.scope_info.scope_ident) == 0)
 	    lexer.parsing_error(left->tkn, "An object with the identifier '%s' was already declared in this scope.", std::string(left->tkn.sv).c_str());
-	get_and_add_right_binary(tkn_type, node, lexer, parser);
 	
-	node->type_result = node->sub->alt_sub->type_result;
-	node->type_flags = node->sub->alt_sub->type_flags;
+	Scope_info this_scope = parser.scope_info.next_scope(left);
+	{
+	    get_and_add_right_binary(tkn_type, node, lexer, parser);
+	    node->type_result = node->sub->alt_sub->type_result;
+	    node->type_flags = node->sub->alt_sub->type_flags;
+	}
+	parser.scope_info.restore_scope(this_scope);
+	return node;
     }
     else if(left->tkn.type == ':') {
 	get_and_add_right_binary(tkn_type, node, lexer, parser);
 	Ast_node* right = node->sub->alt_sub;
-	if(compare_types(left->sub->alt_sub, right) != Type_compare::B_subset_A)
-	    lexer.parsing_error(right->tkn, "This type is not a subset of the type in the previous declaration.");
 	
-	node_delete(left->sub->alt_sub);
-	left->sub->alt_sub = node;
+	Type_compare tc = compare_types(left->sub->alt_sub, right);
+	if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
+	    node_delete(left->sub->alt_sub);
+	    left->sub->alt_sub = node;
+	}
+	else {
+	    lexer.parsing_error(right->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
+	}
 	return left;
     }
     else {
-	lexer.parsing_error(left->tkn, "Expected a declaration or an identifier, but got '%'", get_token_name_str(left->tkn.type).c_str());
+	lexer.parsing_error(left->tkn, "Expected a declaration or an identifier, but got '%s'", get_token_name_str(left->tkn.type).c_str());
 	return node;
     }
 }
@@ -433,29 +516,29 @@ Ast_node *led_dot(LED_ARGS)
 	return node;
     }
 
-    Scope_info enclosing_scope = parser.scope_info.next_scope(left, hash_string_view(left->tkn.sv, parser.scope_info.scope_hash));
+    // Scope_info enclosing_scope = parser.scope_info.next_scope(left, hash_string_view(left->tkn.sv, parser.scope_info.scope_hash));
 
     get_and_add_right_binary(tkn_type, node, lexer, parser);
 
-    parser.scope_info.restore_scope(enclosing_scope);
+    // parser.scope_info.restore_scope(enclosing_scope);
     return node;
 }
 
-// NOTE: left can be a set or identifer
-Ast_node *led_to_decl(LED_ARGS)
-{
-    Ast_node* node = led_normal(tkn_type, lexer, parser, left, super);
-    if(left->tkn.type == tkn_ident) {
-	uint64_t left_id = parser.ast.find_ident(left, parser.scope_info.scope_hash);
-	if(!left_id) {
-	    lexer.parsing_error(left->tkn, "This object is not in scope.");
-	    return node;
-	}
-	left->id = left_id;
-	// CONTINUE HERE
-    }
-    return node;
-}
+// // NOTE: left can be a set or identifer
+// Ast_node *led_to_decl(LED_ARGS)
+// {
+//     Ast_node* node = led_normal(tkn_type, lexer, parser, left, super);
+//     if(left->tkn.type == tkn_ident) {
+// 	uint64_t left_id = parser.ast.find_ident(left, parser.scope_info.scope_hash);
+// 	if(!left_id) {
+// 	    lexer.parsing_error(left->tkn, "This object is not in scope.");
+// 	    return node;
+// 	}
+// 	left->id = left_id;
+// 	// CONTINUE HERE
+//     }
+//     return node;
+// }
 
 // static Ast_node *led_to_imp(LED_ARGS);
 // static Ast_node *led_not_to (LED_ARGS);

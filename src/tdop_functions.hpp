@@ -29,6 +29,7 @@ Ast_node *nud_string(NUD_ARGS);
 Ast_node *nud_true(NUD_ARGS);
 Ast_node *nud_false(NUD_ARGS);
 Ast_node *nud_placeholder(NUD_ARGS);
+Ast_node *nud_exit(NUD_ARGS);
 Ast_node *nud_types(NUD_ARGS);
 Ast_node *nud_all(NUD_ARGS);
 
