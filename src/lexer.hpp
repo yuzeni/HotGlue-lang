@@ -173,7 +173,7 @@ public:
     template<typename... Args>
     void parsing_error(Token& tkn, const char* msg, Args... args)
     {
-	print_error_single_tkn(tkn.ptr, HG_err::parsing, msg, args...);
+	print_error_expression(tkn.ptr, 0, HG_err::parsing, msg, args...);
 	++parsing_error_cnt;
     }
 
@@ -183,19 +183,9 @@ public:
 	Source_location src_loca = input.get_src_location(from_p);
 	std::string error_section = get_section_with_error(from_p, error_len, input.get_src_ref(from_p));
 	const Source& src = input.get_src_ref(from_p);
-	hg_error(error_type, cte_concat_c_str({"[%s:\033[91m%d\033[0m:\033[94m%d\033[0m]\n\033[93m", msg, "\033[0m\n%s"}).c_str(),
-		 src.info.c_str(), src_loca.line, src_loca.offset, args..., error_section.c_str());
-	++error_cnt;
-    }
-    
-    template<typename... Args>
-    void print_error_single_tkn(const char* from_p, HG_err error_type, const char* msg, Args... args)
-    {
-	Source_location src_loca = input.get_src_location(from_p);
-	auto line = get_line_with_error(from_p, input.get_src_ref(from_p));
-	const Source& src = input.get_src_ref(from_p);
-	hg_error(error_type, cte_concat_c_str({"[%s:\033[91m%d\033[0m:\033[94m%d\033[0m]\n\033[93m", msg, "\033[0m\n\'%s\'\n %s"}).c_str(),
-		 src.info.c_str(), src_loca.line, src_loca.offset, args..., line.first.c_str(), line.second.c_str());
+	hg_error(error_type, cte_concat_c_str({"[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n"
+		    HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n%s"}).c_str(),
+	    src.info.c_str(), src_loca.line, src_loca.offset, args..., error_section.c_str());
 	++error_cnt;
     }
     

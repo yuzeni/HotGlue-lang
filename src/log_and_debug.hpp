@@ -4,46 +4,80 @@
 
 #include "utils.hpp"
 
-#define HG_BLACK_COLOR           "\033[30m"
-#define HG_RED_COLOR             "\033[31m"
-#define HG_GREEN_COLOR           "\033[32m"
-#define HG_YELLOW_COLOR          "\033[33m"
-#define HG_BLUE_COLOR            "\033[34m"
-#define HG_MAGENTA_COLOR         "\033[35m"
-#define HG_CYAN_COLOR            "\033[36m"
-#define HG_WHITE_COLOR           "\033[37m"
-#define HG_BRIGHT_BLACK_COLOR    "\033[90m"
-#define HG_BRIGHT_RED_COLOR      "\033[91m"
-#define HG_BRIGHT_GREEN_COLOR    "\033[92m"
-#define HG_BRIGHT_YELLOW_COLOR   "\033[93m"
-#define HG_BRIGHT_BLUE_COLOR     "\033[94m"
-#define HG_BRIGHT_MAGENTA_COLOR  "\033[95m"
-#define HG_BRIGHT_CYAN_COLOR     "\033[96m"
-#define HG_BRIGHT_WHITE_COLOR    "\033[97m"
+#if HG_ENABLE_LOG_COLORS
+#  define HG_BLACK_COLOR           "\033[30m"
+#  define HG_RED_COLOR             "\033[31m"
+#  define HG_GREEN_COLOR           "\033[32m"
+#  define HG_YELLOW_COLOR          "\033[33m"
+#  define HG_BLUE_COLOR            "\033[34m"
+#  define HG_MAGENTA_COLOR         "\033[35m"
+#  define HG_CYAN_COLOR            "\033[36m"
+#  define HG_WHITE_COLOR           "\033[37m"
+#  define HG_BRIGHT_BLACK_COLOR    "\033[90m"
+#  define HG_BRIGHT_RED_COLOR      "\033[91m"
+#  define HG_BRIGHT_GREEN_COLOR    "\033[92m"
+#  define HG_BRIGHT_YELLOW_COLOR   "\033[93m"
+#  define HG_BRIGHT_BLUE_COLOR     "\033[94m"
+#  define HG_BRIGHT_MAGENTA_COLOR  "\033[95m"
+#  define HG_BRIGHT_CYAN_COLOR     "\033[96m"
+#  define HG_BRIGHT_WHITE_COLOR    "\033[97m"
+#  define HG_BLACK_COLOR_BG           "\033[107m"
+#  define HG_RED_COLOR_BG             "\033[107m"
+#  define HG_GREEN_COLOR_BG           "\033[107m"
+#  define HG_YELLOW_COLOR_BG          "\033[107m"
+#  define HG_BLUE_COLOR_BG            "\033[107m"
+#  define HG_MAGENTA_COLOR_BG         "\033[107m"
+#  define HG_CYAN_COLOR_BG            "\033[107m"
+#  define HG_WHITE_COLOR_BG           "\033[107m"
+#  define HG_BRIGHT_BLACK_COLOR_BG    "\033[107m"
+#  define HG_BRIGHT_RED_COLOR_BG      "\033[107m"
+#  define HG_BRIGHT_GREEN_COLOR_BG    "\033[107m"
+#  define HG_BRIGHT_YELLOW_COLOR_BG   "\033[107m"
+#  define HG_BRIGHT_BLUE_COLOR_BG     "\033[107m"
+#  define HG_BRIGHT_MAGENTA_COLOR_BG  "\033[107m"
+#  define HG_BRIGHT_CYAN_COLOR_BG     "\033[107m"
+#  define HG_BRIGHT_WHITE_COLOR_BG    "\033[107m"
+#  define HG_END_COLOR "\033[0m"
+#else
+#  define HG_BLACK_COLOR           ""
+#  define HG_RED_COLOR             ""
+#  define HG_GREEN_COLOR           ""
+#  define HG_YELLOW_COLOR          ""
+#  define HG_BLUE_COLOR            ""
+#  define HG_MAGENTA_COLOR         ""
+#  define HG_CYAN_COLOR            ""
+#  define HG_WHITE_COLOR           ""
+#  define HG_BRIGHT_BLACK_COLOR    ""
+#  define HG_BRIGHT_RED_COLOR      ""
+#  define HG_BRIGHT_GREEN_COLOR    ""
+#  define HG_BRIGHT_YELLOW_COLOR   ""
+#  define HG_BRIGHT_BLUE_COLOR     ""
+#  define HG_BRIGHT_MAGENTA_COLOR  ""
+#  define HG_BRIGHT_CYAN_COLOR     ""
+#  define HG_BRIGHT_WHITE_COLOR    ""
+#  define HG_BLACK_COLOR_BG           ""
+#  define HG_RED_COLOR_BG             ""
+#  define HG_GREEN_COLOR_BG           ""
+#  define HG_YELLOW_COLOR_BG          ""
+#  define HG_BLUE_COLOR_BG            ""
+#  define HG_MAGENTA_COLOR_BG         ""
+#  define HG_CYAN_COLOR_BG            ""
+#  define HG_WHITE_COLOR_BG           ""
+#  define HG_BRIGHT_BLACK_COLOR_BG    ""
+#  define HG_BRIGHT_RED_COLOR_BG      ""
+#  define HG_BRIGHT_GREEN_COLOR_BG    ""
+#  define HG_BRIGHT_YELLOW_COLOR_BG   ""
+#  define HG_BRIGHT_BLUE_COLOR_BG     ""
+#  define HG_BRIGHT_MAGENTA_COLOR_BG  ""
+#  define HG_BRIGHT_CYAN_COLOR_BG     ""
+#  define HG_BRIGHT_WHITE_COLOR_BG    ""
+#  define HG_END_COLOR ""
+#endif
 
-#define HG_BLACK_COLOR_BG           "\033[107m"
-#define HG_RED_COLOR_BG             "\033[107m"
-#define HG_GREEN_COLOR_BG           "\033[107m"
-#define HG_YELLOW_COLOR_BG          "\033[107m"
-#define HG_BLUE_COLOR_BG            "\033[107m"
-#define HG_MAGENTA_COLOR_BG         "\033[107m"
-#define HG_CYAN_COLOR_BG            "\033[107m"
-#define HG_WHITE_COLOR_BG           "\033[107m"
-#define HG_BRIGHT_BLACK_COLOR_BG    "\033[107m"
-#define HG_BRIGHT_RED_COLOR_BG      "\033[107m"
-#define HG_BRIGHT_GREEN_COLOR_BG    "\033[107m"
-#define HG_BRIGHT_YELLOW_COLOR_BG   "\033[107m"
-#define HG_BRIGHT_BLUE_COLOR_BG     "\033[107m"
-#define HG_BRIGHT_MAGENTA_COLOR_BG  "\033[107m"
-#define HG_BRIGHT_CYAN_COLOR_BG     "\033[107m"
-#define HG_BRIGHT_WHITE_COLOR_BG    "\033[107m"
-
-#define HG_ERROR_COLOR   HG_BRIGHT_RED_COLOR
+#define HG_ERROR_COLOR HG_BRIGHT_RED_COLOR
 #define HG_WARNING_COLOR HG_BRIGHT_YELLOW_COLOR
-#define HG_INFO_COLOR    HG_BRIGHT_BLACK_COLOR
+#define HG_INFO_COLOR HG_BRIGHT_BLACK_COLOR
 #define HG_SUCCESS_COLOR HG_BRIGHT_GREEN_COLOR
-
-#define HG_END_COLOR "\033[0m"
 
 enum class HG_err {
   error,
@@ -166,5 +200,3 @@ void hg_error(HG_err err_type, const char *msg, Args... args)
 #  define HG_DEB_assert(x, msg, ...)
 #  define HG_DEB_not_implemented
 #endif
-
-
