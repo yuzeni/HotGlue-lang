@@ -578,6 +578,8 @@ std::string Lexer::get_section_with_error(const char *from_p, size_t error_len, 
 			error_mark += '^';
 		    else if (j > (size_t)std::abs(begin) && j < (size_t)std::abs(begin) + error_len + total_error_mark_length)
 			error_mark += '~';
+		    else if (j == (size_t)std::abs(begin) + error_len + total_error_mark_length)
+			error_mark += '^';
 		    else
 			error_mark += ' ';
 		}

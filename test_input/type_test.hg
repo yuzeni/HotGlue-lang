@@ -1,6 +1,15 @@
 
+G: C {E:1, D:2}
+
+E: 6
+
 type B: 4 // i32: 4 // this should not compile
 type A: u64: B
+
+K : {
+    a: 32
+    b: "hello"
+}
 
 type C: {
     D: i32
@@ -9,9 +18,9 @@ type C: {
 
 F: C {1, 2}
 
-F.   E.R = 2
+F.E.R = 2
 
-G: C {E:1, D:2}
+
 
 type H: (I: i8) -> {
      D: I // u8: I // this should not compile

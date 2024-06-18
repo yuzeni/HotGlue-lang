@@ -170,7 +170,7 @@ struct Ast {
     Hash find_ident(Ast_node* node, Ast_node* scope_super);
     Hash add_ident(Ast_node* ident_node, Ast_node* scope_super);
 
-    void print(Print_ast_enum config = Print_ast_enum(PN_Content |PN_Type_flags | PN_Ident_idx)) const; // | PN_Super
+    void print(Print_ast_enum config = Print_ast_enum(PN_Content | PN_Type_flags | PN_Type_result | PN_Ident_idx)) const; // | PN_Super
     void print_node(const Ast_node* node, Print_ast_enum config, int depth = 0) const;
 
     // the root node

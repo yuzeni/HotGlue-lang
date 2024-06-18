@@ -94,6 +94,8 @@ Ast_node *nud_error(NUD_ARGS)
     return nullptr;
 }
 
+// NOTE: if the identifier is already present, the id will be set.
+//       But nud_ident will not add new identifiers.
 Ast_node *nud_ident(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
@@ -463,44 +465,47 @@ static Ast_node* handle_declare_signifiers(Ast_node* left, Lexer& lexer)
 // declarations open new scopes
 Ast_node *led_declare(LED_ARGS)
 {
-    Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
+    // Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
 
-    if(is_declare_signifier_tkn(left->tkn.type))
-	left = handle_declare_signifiers(left, lexer);
+    Ast_node* node = left;
+    node->super = super;
+
+    if(is_declare_signifier_tkn(node->tkn.type))
+	node = handle_declare_signifiers(node, lexer);
     
-    add_single_sub(node, left);
+    // add_single_sub(node, left);
 
-
-    if(left->tkn.type == tkn_ident) {
-	if(left->type_result == T_Declared_Object || parser.ast.add_ident(left, parser.scope_info.scope_ident) == 0)
-	    lexer.parsing_error(left->tkn, "An object with the identifier '%s' was already declared in this scope.", std::string(left->tkn.sv).c_str());
-	
-	Scope_info this_scope = parser.scope_info.next_scope(left);
-	{
-	    get_and_add_right_binary(tkn_type, node, lexer, parser);
-	    node->type_result = node->sub->alt_sub->type_result;
-	    node->type_flags = node->sub->alt_sub->type_flags;
-	}
-	parser.scope_info.restore_scope(this_scope);
+    if(node->tkn.type != tkn_ident) {
+	lexer.parsing_error(node->tkn, "Expected an identifier, but got '%s'", get_token_name_str(node->tkn.type).c_str());
 	return node;
     }
-    else if(left->tkn.type == ':') {
-	get_and_add_right_binary(tkn_type, node, lexer, parser);
-	Ast_node* right = node->sub->alt_sub;
+    
+    if(node->sub == nullptr) {
+	if(node->type_result == T_Declared_Object)
+	    lexer.parsing_error(node->tkn, "An object with the identifier '%s' was already declared in this scope.", std::string(node->tkn.sv).c_str());
+
+	node->id = parser.ast.add_ident(node, parser.scope_info.scope_ident);
+	HG_DEB_assert(node->id, "There shouldn't be any previous declaration of that identifier.");
 	
-	Type_compare tc = compare_types(left->sub->alt_sub, right);
-	if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
-	    node_delete(left->sub->alt_sub);
-	    left->sub->alt_sub = node;
+	Scope_info this_scope = parser.scope_info.next_scope(node);
+	{
+	    get_and_add_right_unary(tkn_type, node, lexer, parser);
 	}
-	else {
-	    lexer.parsing_error(right->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
-	}
-	return left;
+	parser.scope_info.restore_scope(this_scope);
+
+	return node;
     }
     else {
-	lexer.parsing_error(left->tkn, "Expected a declaration or an identifier, but got '%s'", get_token_name_str(left->tkn.type).c_str());
+	get_and_add_right_binary(tkn_type, node, lexer, parser);
+	
+	Type_compare tc = compare_types(node->sub, node->alt_sub);
+	if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
+	    HG_DEB_not_implemented;
+	}
+	else {
+	    lexer.parsing_error(node->sub->alt_sub->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
+	}
 	return node;
     }
 }

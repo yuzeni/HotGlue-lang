@@ -40,7 +40,7 @@ public:
     void type_error(Ast_node* node, const char* msg, Args... args)
     {
 	auto left_right_nodes = get_left_and_right_most_nodes(node);
-	lexer.print_error_expression(left_right_nodes.first->tkn.ptr, size_t(left_right_nodes.second->tkn.ptr - left_right_nodes.first->tkn.ptr + 1), HG_err::type, msg, args...);
+	lexer.print_error_expression(left_right_nodes.first->tkn.ptr, size_t(left_right_nodes.second->tkn.ptr - left_right_nodes.first->tkn.ptr), HG_err::type, msg, args...);
 	++type_error_cnt;
     }
     

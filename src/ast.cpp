@@ -133,7 +133,7 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	std::cout << HG_BRIGHT_MAGENTA_COLOR << get_token_name_str(node->tkn.type) << HG_END_COLOR;
     }
 
-    if(config & PN_Type_result) {
+    if((config & PN_Type_result) && node->type_result != T_None) {
 	std:: cout << HG_BRIGHT_BLACK_COLOR << " TR: " << type_enum_name_table[node->type_result] << HG_END_COLOR;
     }
 
