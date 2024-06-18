@@ -166,13 +166,15 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	std::cout << HG_END_COLOR;
     }
 
-    if(config & PN_Ident_idx)
+    if(config & PN_Ident_idx) {
 	// if(node->type_result == T_Declared_Object || node->type_result == T_Data_Object || node->type_result == T_Function_Object)
-	    if(node->tkn.type == tkn_ident)
+	if(node->tkn.type == tkn_ident)
 	    std:: cout << HG_BRIGHT_CYAN_COLOR << " ID: " << node->id << HG_END_COLOR;
+    }
     
-    if((config & PN_Super) && node->super)
+    if((config & PN_Super) && node->super) {
 	std::cout << HG_BRIGHT_GREEN_COLOR << " S: " << get_token_name_str(node->super->tkn.type) << HG_END_COLOR;
+    }
     
     std::cout << '\n';
     

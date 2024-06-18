@@ -114,3 +114,40 @@ void Parser::parse_string(const char *string)
     lexer.load_input_from_string(string);
     parse_latest(lexer, *this);
 }
+
+static Ast_node *left_most_node(Ast_node *node) {
+    if(!node->sub)
+	return node;
+    Ast_node* left_most_sub = node;
+    Ast_node* sub = node->sub;
+    while(sub) {
+	Ast_node* new_left_most_sub = left_most_node(sub);
+	if(new_left_most_sub->tkn.ptr < left_most_sub->tkn.ptr)
+	    left_most_sub = new_left_most_sub;
+	sub = sub->alt_sub;
+    }
+    return left_most_sub;
+}
+
+static Ast_node *right_most_node(Ast_node *node) {
+    if(!node->sub)
+	return node;
+    Ast_node* right_most_sub = node;
+    Ast_node* sub = node->sub;
+    while(sub) {
+	Ast_node* new_right_most_sub = right_most_node(sub);
+	if(new_right_most_sub->tkn.ptr > right_most_sub->tkn.ptr)
+	    right_most_sub = new_right_most_sub;
+	sub = sub->alt_sub;
+    }
+    return right_most_sub;
+}
+
+std::pair<Ast_node *, Ast_node *> Parser::get_left_and_right_most_nodes(Ast_node* node) const
+{
+    if(!node->sub)
+	return {node, node};
+    Ast_node* left_most_sub = left_most_node(node);
+    Ast_node* right_most_sub = right_most_node(node);
+    return { node->tkn.ptr < left_most_sub->tkn.ptr ? node : left_most_sub, node->tkn.ptr > right_most_sub->tkn.ptr ? node : right_most_sub };
+}

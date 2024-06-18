@@ -534,25 +534,65 @@ void Lexer::print_token(Token &tkn, bool show_content, bool keep_line_location) 
     std::cout << " ";
 }
 
-std::pair<std::string, std::string> Lexer::get_line_with_error(const char *p, const Source &source)
+std::pair<std::string, std::string> Lexer::get_line_with_error(const char *from_p, const Source &source) const
 {
     int64_t begin = 0, end = 0;
-    std::string line, error_ptr = "\033[91m";
+    std::string line, error_ptr = HG_ERROR_COLOR;
 
-    if (!is_whitespace(*p)) {
-	while (!is_new_line(*(p + begin)) && (p + begin) > source.data)
+    if (!is_whitespace(*from_p)) {
+	while (!is_new_line(*(from_p + begin)) && (from_p + begin) > source.data)
 	    --begin;
-	while (is_whitespace(*(p + begin)) && (p + begin) < source.data + source.size)
+	while (is_whitespace(*(from_p + begin)) && (from_p + begin) < source.data + source.size)
 	    ++begin;
-	while (!is_new_line(*(p + end)) &&  (p + end) < source.data + source.size)
+	while (!is_new_line(*(from_p + end)) && (from_p + end) < source.data + source.size)
 	    ++end;
-	line = std::string{ p + begin, size_t(abs(end - begin)) };
-	for (int i = 0; i < p - (p + begin); ++i)
+	line = std::string{ from_p + begin, size_t(abs(end - begin)) };
+	for (int i = 0; i < from_p - (from_p + begin); ++i)
 	    error_ptr += " ";
     }
-    error_ptr += "^\033[0m";
+    error_ptr += HG_END_COLOR;
 
     return { line, error_ptr };
+}
+
+std::string Lexer::get_section_with_error(const char *from_p, size_t error_len, const Source &source) const
+{
+    int64_t begin = 0, end = 0;
+    std::string section;
+    if (!is_whitespace(*from_p)) {
+	while ((from_p + begin - 1) > source.data && *(from_p + begin - 1) != '\n')
+	    --begin;
+	while ((from_p + error_len + end) < source.data + source.size && *(from_p + error_len + end) != '\n')
+	    ++end;
+	ptrdiff_t section_len = (from_p + error_len + end) - (from_p + begin) + 1;
+	HG_DEB_assert(section_len > 0, "");
+	section = std::string{ from_p + begin, size_t(section_len)};
+
+	size_t total_error_mark_length = 0;
+	for(size_t i = 0, last_new_line_i = i; i < section.size(); ++i) {
+	    if(section.at(i) == '\n') {
+		std::string error_mark;
+		error_mark += "\n" HG_ERROR_COLOR;
+		for(size_t j = last_new_line_i; j < i; ++j) {
+		    if (j == (size_t)std::abs(begin))
+			error_mark += '^';
+		    else if (j > (size_t)std::abs(begin) && j < (size_t)std::abs(begin) + error_len + total_error_mark_length)
+			error_mark += '~';
+		    else
+			error_mark += ' ';
+		}
+		error_mark += HG_END_COLOR;
+		section.insert(i, error_mark);
+		i += error_mark.size();
+		total_error_mark_length += error_mark.size();
+		last_new_line_i = i;
+	    }
+	    if(section.at(i) == '\t')
+		section.at(i) = ' ';
+	}
+    }
+
+    return section;
 }
 
 bool Lexer::Token_window::push(Token tkn)

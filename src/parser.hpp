@@ -39,7 +39,8 @@ public:
     template<typename... Args>
     void type_error(Ast_node* node, const char* msg, Args... args)
     {
-	lexer.print_error(node->tkn.ptr, HG_err::type, msg, args...);
+	auto left_right_nodes = get_left_and_right_most_nodes(node);
+	lexer.print_error_expression(left_right_nodes.first->tkn.ptr, size_t(left_right_nodes.second->tkn.ptr - left_right_nodes.first->tkn.ptr + 1), HG_err::type, msg, args...);
 	++type_error_cnt;
     }
     
@@ -49,6 +50,7 @@ public:
     Scope_info scope_info;
     
 private:
+    std::pair<Ast_node*, Ast_node*> get_left_and_right_most_nodes(Ast_node* node) const;
     Lexer lexer{}; // LF_PRINT_TOKENS
 };
 
