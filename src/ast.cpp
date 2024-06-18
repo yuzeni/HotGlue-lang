@@ -133,6 +133,10 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	std::cout << HG_BRIGHT_MAGENTA_COLOR << get_token_name_str(node->tkn.type) << HG_END_COLOR;
     }
 
+    if(config & PN_Type_result) {
+	std:: cout << HG_BRIGHT_BLACK_COLOR << " TR: " << type_enum_name_table[node->type_result] << HG_END_COLOR;
+    }
+
     if(config & PN_Type_flags) {
 	std::cout << HG_BRIGHT_BLUE_COLOR;
 	if(node->type_flags)
@@ -161,6 +165,11 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	    std::cout << "Pure_type ";
 	std::cout << HG_END_COLOR;
     }
+
+    if(config & PN_Ident_idx)
+	// if(node->type_result == T_Declared_Object || node->type_result == T_Data_Object || node->type_result == T_Function_Object)
+	    if(node->tkn.type == tkn_ident)
+	    std:: cout << HG_BRIGHT_CYAN_COLOR << " ID: " << node->id << HG_END_COLOR;
     
     if((config & PN_Super) && node->super)
 	std::cout << HG_BRIGHT_GREEN_COLOR << " S: " << get_token_name_str(node->super->tkn.type) << HG_END_COLOR;

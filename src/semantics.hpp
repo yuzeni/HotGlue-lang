@@ -130,7 +130,7 @@ bool tkn_legal_in_global_space(Token_enum type);
 
 // parser semantics
 
-constexpr bool is_declare_signifier_tkn(Token_enum tkn) {return tkn == '|' || (tkn >= tkn_is_type && tkn <= tkn_SoA); }
+constexpr bool is_declare_signifier_tkn(Token_enum tkn) {return tkn == '|' || tkn == '$' || (tkn >= tkn_is_type && tkn <= tkn_SoA); }
 
 // type semantics
 
