@@ -1,3 +1,5 @@
+// TODO-LIST:
+// - pass on type-flags to supers when adding subs
 
 #include "tdop_functions.hpp"
 
@@ -98,11 +100,11 @@ Ast_node *nud_error(NUD_ARGS)
 //       But nud_ident will not add new identifiers.
 Ast_node *nud_ident(NUD_ARGS)
 {
-    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_ident_type};
     lexer.next_token();
     node->id = parser.ast.find_ident_in_scope(node, parser.scope_info.scope_ident);
     if(node->id)
-	node->type_result = T_Declared_Object;
+	node->type_result = T_Decl_ref;
     return node;
 }
 
@@ -207,7 +209,7 @@ Ast_node *nud_size(NUD_ARGS)
     lexer.next_token();
     get_and_add_right_unary(tkn_type, node, lexer, parser);
 
-    if(node->sub->type_result == T_Type_Object || node->sub->type_result == T_Data_Object) {
+    if(node->sub->type_result == T_Data_Object) {
 	HG_DEB_not_implemented;
     }
     else {
@@ -230,7 +232,7 @@ Ast_node *nud_do(NUD_ARGS)
 
 Ast_node *nud_expand(NUD_ARGS)
 {
-    Ast_node* expand_node = new Ast_node{lexer.tkn_at(0), super, T_Unnamed_Object};
+    Ast_node* expand_node = new Ast_node{lexer.tkn_at(0), super, T_None};
     lexer.next_token();
     // get the set to expand over
     get_and_add_right_unary(tkn_type, expand_node, lexer, parser);
@@ -394,19 +396,59 @@ Ast_node *led_parenthesis(LED_ARGS)
     return node;
 }
 
-// TODO: maybe enhance!
-static bool is_type(Ast_node *node)
-{
-    return node->tkn.type == tkn_ident || (node->tkn.type >= tkn_i8 && node->tkn.type <= tkn_placeholder);
-}
-
 Ast_node *led_bracket(LED_ARGS)
 {
-    Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
-    add_single_sub(node, left);
-    if(!(is_type(left) || left->tkn.type == '['))
+    if(left->type_result != T_Data_Object && is_base_type(left->type_result) && left->tkn.type != '[') {
+	parser.type_error(left, "Expected type '%s' or a base type, but got type '%s'.", type_enum_name_table[T_Data_Object], type_enum_name_table[left->type_result]);
 	return nullptr;
+    }
+
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    add_single_sub(node, left);
     add_alternative_sub(node, node->sub, nud_bracket(tkn_type, lexer, parser, nullptr, node));
+    return node;
+}
+
+Ast_node *led_brace(LED_ARGS)
+{
+    Ast_node* node = left;
+    
+    if(node->type_result != T_Decl_ref) {
+	parser.type_error(node, "Expected a referene to a declared object, but got type '%s'", type_enum_name_table[node->type_result]);
+	return nullptr;
+    }
+
+    node->type_result = T_Data_Object;
+    
+    Ast_node* object = parser.ast.find_object_with_id(node->id);
+    HG_DEB_assert(object, "Object should have been found.");
+    
+    if(object->type_result != T_Data_Object) {
+	parser.type_error(node, "Expected type '%s', but got '%s'.", type_enum_name_table[T_Data_Object], type_enum_name_table[object->type_result]);
+	return nullptr;
+    }
+
+    Scope_info enclosing_scope = parser.scope_info.next_scope(node);
+    {
+	// copy the whole object
+	add_single_sub(node, copy_expression_in_new_scope(object->sub, parser));
+	Ast_node* prev_sub = node->sub;
+	Ast_node* sub = object->sub->alt_sub;
+	while(sub) {
+	    add_alternative_sub(node, &prev_sub, sub);
+	    
+	    sub = sub->alt_sub;
+	}
+	Ast_node* bracket = nud_bracket(tkn_type, lexer, parser, nullptr, node);
+	sub = bracket->sub;
+	while(sub) {
+	    add_alternative_sub(node, &prev_sub, sub);
+	    sub = sub->alt_sub;
+	}
+	delete bracket;
+    }
+    parser.scope_info.restore_scope(enclosing_scope);
+    
     return node;
 }
 
@@ -465,26 +507,32 @@ static Ast_node* handle_declare_signifiers(Ast_node* left, Lexer& lexer)
 // declarations open new scopes
 Ast_node *led_declare(LED_ARGS)
 {
-    // Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
     lexer.next_token();
-
     Ast_node* node = left;
     node->super = super;
 
     if(is_declare_signifier_tkn(node->tkn.type))
 	node = handle_declare_signifiers(node, lexer);
-    
-    // add_single_sub(node, left);
 
     if(node->tkn.type != tkn_ident) {
 	lexer.parsing_error(node->tkn, "Expected an identifier, but got '%s'", get_token_name_str(node->tkn.type).c_str());
-	return node;
+	return nullptr;
     }
-    
-    if(node->sub == nullptr) {
-	if(node->type_result == T_Declared_Object)
-	    lexer.parsing_error(node->tkn, "An object with the identifier '%s' was already declared in this scope.", std::string(node->tkn.sv).c_str());
 
+    add_type_flag(node, TF_Declaration);
+
+    if(parser.scope_info.context_instantiation_object) {
+	// In the cotext, of instantiating an object from a type or object,
+	// the to be declared object should be found in the 'context_instantiation_object'.
+
+	node->id = parser.ast.find_ident_in_scope(node, parser.scope_info.context_instantiation_object);
+	if(!node->id) {
+	    std::string_view ident = parser.scope_info.context_instantiation_object->tkn.sv;
+	    lexer.parsing_error(node->tkn, "This object is not part of the, to be instantiated, object '=%.*s='.", int(ident.length()), ident.data());
+	    return nullptr;
+	}
+    }
+    else if(node->type_result != T_Decl_ref) {
 	node->id = parser.ast.add_ident(node, parser.scope_info.scope_ident);
 	HG_DEB_assert(node->id, "There shouldn't be any previous declaration of that identifier.");
 	
@@ -494,20 +542,31 @@ Ast_node *led_declare(LED_ARGS)
 	}
 	parser.scope_info.restore_scope(this_scope);
 
+	// TODO: determine the type of node (Data Object, function object, etc.).
+	
 	return node;
+    }
+    
+    Ast_node* right = nullptr;
+    if(!(lexer.not_eof() && (right = parse_expression(lexer, parser, node, tkn_semantics_table[tkn_type].rbp)))) {
+	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
+	return nullptr;
+    }
+    
+    Type_compare tc = compare_types(node, right, parser);
+    if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
+	if(node->sub)
+	    node_delete(node->sub);
+	add_single_sub(node, right);
+	node->type_result = right->type_result;
     }
     else {
-	get_and_add_right_binary(tkn_type, node, lexer, parser);
-	
-	Type_compare tc = compare_types(node->sub, node->alt_sub);
-	if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
-	    HG_DEB_not_implemented;
-	}
-	else {
-	    lexer.parsing_error(node->sub->alt_sub->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
-	}
-	return node;
+	lexer.parsing_error(node->sub->alt_sub->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
+	node_delete(node->sub->alt_sub);
+	node->sub->alt_sub = nullptr;
     }
+    return node;
+
 }
 
 Ast_node *led_dot(LED_ARGS)
@@ -518,10 +577,10 @@ Ast_node *led_dot(LED_ARGS)
     add_single_sub(node, left);
 
     if(left->tkn.type == tkn_placeholder)
-	left->type_result = T_Declared_Object;
+	left->type_result = T_Decl_ref;
     
-    if(left->type_result != T_Declared_Object) {
-	parser.type_error(left, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Declared_Object], type_enum_name_table[left->type_result]);
+    if(left->type_result != T_Decl_ref) {
+	parser.type_error(left, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Decl_ref], type_enum_name_table[left->type_result]);
 	return node;
     }
     HG_DEB_assert(left->id, "id must be defined.");
@@ -531,7 +590,7 @@ Ast_node *led_dot(LED_ARGS)
 	get_and_add_right_binary(tkn_type, node, lexer, parser);
 	
 	Ast_node* right = node->sub->alt_sub;
-	if(right->type_result == T_Declared_Object) {
+	if(right->type_result == T_Decl_ref) {
 	    HG_DEB_assert(right->id, "id must be defined.");
 	    node->id = parser.ast.find_ident_in_scope(right, parser.scope_info.scope_ident);
 	}
@@ -539,7 +598,7 @@ Ast_node *led_dot(LED_ARGS)
 	    if(right->tkn.type == tkn_ident)
 		lexer.parsing_error(right->tkn, "The identifier is not declared in this scope.");
 	    else
-		parser.type_error(right, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Declared_Object], type_enum_name_table[right->type_result]);
+		parser.type_error(right, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Decl_ref], type_enum_name_table[right->type_result]);
 	}
     }
     parser.scope_info.restore_scope(this_scope);

@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "lexer.hpp"
+#include "parser.hpp"
 #include "utils.hpp"
 #include "log_and_debug.hpp"
 
@@ -31,6 +32,44 @@ Ast_node *node_delete(Ast_node *node)
     Ast_node* alt_sub = node->alt_sub;
     delete node;
     return alt_sub;
+}
+
+Ast_node *super_copy_expression_in_new_scope(Ast_node *node, Parser& parser)
+{
+    Ast_node* new_node = copy_expression_in_new_scope(node, parser);
+    if(node->alt_sub) {
+	new_node->alt_sub = super_copy_expression_in_new_scope(node->alt_sub, parser);
+	new_node->alt_sub->super = new_node->super;
+    }
+    return new_node;
+}
+
+Ast_node *copy_expression_in_new_scope(Ast_node *node, Parser& parser)
+{
+    Ast_node* new_node = new Ast_node;
+    new_node->type_result = node->type_result;
+    new_node->type_flags = node->type_flags;
+    if(node->id) {
+	HG_DEB_assert(node->tkn.type == tkn_type, "");
+	new_node->id = parser.ast.add_ident(node, parser.scope_info.scope_ident);
+	HG_DEB_assert(new_node->id, "It must be guaranteed that the object can be copied");
+    }
+    new_node->tkn = node->tkn;
+    if(node->sub) {
+	if(node->type_flags & TF_Declaration) {
+	    HG_DEB_assert(new_node->id, "");
+	    Scope_info enclosing_scope = parser.scope_info.next_scope(new_node);
+	    {
+		new_node->sub = super_copy_expression_in_new_scope(node->sub, parser);
+	    }
+	    parser.scope_info.restore_scope(enclosing_scope);
+	}
+	else {
+	    new_node->sub = super_copy_expression_in_new_scope(node->sub, parser);
+	}
+	new_node->sub->super = new_node;
+    }
+    return new_node;
 }
 
 Hash Ast::find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super)
@@ -108,6 +147,7 @@ Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
     return 0;
 }
 
+
 void Ast::print(Print_ast_enum config) const
 {
     std::cout << '\n';
@@ -184,12 +224,12 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	print_node(node->alt_sub, config, depth);
 }
 
-uint64_t Ast_node::count_subs(Ast_node* node) const {
-    Ast_node* sub = node->sub;
-    uint64_t cnt = 0;
-    while(sub) {
-	++cnt;
-	sub = sub->alt_sub;
-    }
-    return cnt;
-}
+// uint64_t Ast_node::count_subs(Ast_node* node) const {
+//     Ast_node* sub = node->sub;
+//     uint64_t cnt = 0;
+//     while(sub) {
+// 	++cnt;
+// 	sub = sub->alt_sub;
+//     }
+//     return cnt;
+// }

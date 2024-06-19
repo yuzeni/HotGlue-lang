@@ -60,6 +60,7 @@ Ast_node *led_left(LED_ARGS);
 Ast_node *led_normal(LED_ARGS);
 Ast_node *led_parenthesis(LED_ARGS);
 Ast_node *led_bracket(LED_ARGS);
+Ast_node *led_brace(LED_ARGS);
 Ast_node *led_declare(LED_ARGS);
 Ast_node *led_dot(LED_ARGS);
 Ast_node *led_error(LED_ARGS);

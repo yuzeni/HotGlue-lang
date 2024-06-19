@@ -81,7 +81,7 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
   to ~function_object_B~, where ~object_A~ is an argument to ~function_object_B~.
   
 *** Object instantiation
-- To create a data object (or type) ~A~ *from another data object* ~B~, simply declare ~A: B~.
+- To create a data object (or type) ~A~ *from another data object or data type* ~B~, simply declare ~A: B~.
   Use ~A: B { item_in_B: 5 }~ to access and further narrow the definition of the objects inside the instance of ~B~
   which then becomes ~A~.
 - To create a data object (or type) ~A~ *from a function object* ~B~, use ~A: B(args)~, where ~args~

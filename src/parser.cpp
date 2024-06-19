@@ -18,6 +18,13 @@ Scope_info Scope_info::next_scope(Ast_node* scope_ident)
     return old;
 }
 
+Scope_info Scope_info::set_context_instantiation_object(Ast_node *object)
+{
+    Scope_info old = *this;
+    this->context_instantiation_object = object;
+    return old;
+}
+
 // call only on a unary op or argument
 Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rbp)
 {

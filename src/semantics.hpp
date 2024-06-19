@@ -99,7 +99,7 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     /* grouping */
     table['(']             = {15, 0, nud_bracket, led_parenthesis};
     table['[']             = {15, 0, nud_bracket, led_bracket};
-    table['{']             = {15, 0, nud_bracket};
+    table['{']             = {15, 0, nud_bracket, led_brace};
     table[')']             = {0, 0, nud_delimiter};
     table[']']             = {0, 0, nud_delimiter};
     table['}']             = {0, 0, nud_delimiter};
@@ -134,8 +134,7 @@ constexpr bool is_declare_signifier_tkn(Token_enum tkn) {return tkn == '|' || tk
 
 // type semantics
 
-bool is_object_type(Type_enum t);
-
+constexpr bool is_base_type(Type_enum type) {return type >= T_i8 && type <= T_placeholder; }
 constexpr bool is_base_type_integer(Type_enum type) { return type >= T_i8 && type <= T_u64; }
 constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
 
@@ -147,4 +146,5 @@ enum class Type_compare {
     A_subset_B
 };
 
-Type_compare compare_types(Ast_node* node_a, Ast_node* node_b);
+class Parser;
+Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser parser);

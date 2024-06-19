@@ -21,10 +21,12 @@ struct Scope_info
     Scope_info(Ast_node* first_scope_ident) : scope_ident(first_scope_ident) {}
     
     Scope_info next_scope(Ast_node* scope_ident);
+    Scope_info set_context_instantiation_object(Ast_node* object);
     void restore_scope(Scope_info scope_info) {*this = scope_info;}
     
     int depth = 0;
     Ast_node* scope_ident = nullptr;
+    Ast_node* context_instantiation_object = nullptr;
 };
 
 class Parser

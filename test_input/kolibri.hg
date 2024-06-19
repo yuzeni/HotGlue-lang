@@ -50,7 +50,7 @@ type lbm_fluid: exobj {
     
     type COLLISION_OPERATOR: u8: { SRT:0 MRT:1 CM_MRT:2 }
     
-    attribs: {
+    attribs = {
     
         | si_origin: f32[3]
         | si_size: f32[3] req this >= 0 // for all 3 in the set this
@@ -81,7 +81,7 @@ type lbm_fluid: exobj {
         extern CCQ: { lattice_intersec_storage[CC_count * lbm_descrete_velos], Time }
         exw CC_count: { u64, Time }
         extern CFlags: u8[lbm_size, lbm_descrete_velos]
-        timestep: u64: 0 // external functions actually don't need to know the timestep
+        timestep: u64 = 0 // external functions actually don't need to know the timestep
     }
 }
 
