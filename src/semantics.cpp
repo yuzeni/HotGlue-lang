@@ -72,13 +72,13 @@ Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser parser)
     HG_DEB_assert(node_a && node_b, "");
     HG_DEB_assert(node_a->typ_result != T_Decl_ref && node_b->type_result != T_Decl_ref, "");
 
-    if((node_a->type_result == T_Data_Object || node_a->type_result == T_Data_Type)
-	&& (node_b->type_result == T_Data_Object || node_b->type_result == T_Data_Type))
+    if((node_a->type_result == T_Data_Object)
+	&& (node_b->type_result == T_Data_Object))
     {
 	    return compare_data_types(node_a, node_b, parser);
     }
-    else if((node_a->type_result == T_Function_Object || node_a->type_result == T_Function_Type)
-	    && (node_b->type_result == T_Function_Object || node_b->type_result == T_Function_Type))
+    else if((node_a->type_result == T_Function_Object)
+	    && (node_b->type_result == T_Function_Object))
     {
 	    return compare_function_types(node_a, node_b, parser);
     }
