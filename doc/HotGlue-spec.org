@@ -5,8 +5,11 @@
 - Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ >= ~descr_2~ >= ~...~.
   For example ~a: u64: u32: 5~ is well defined and ~a: u32: u64: 3~ isn't.
   - However, the type of ~ident~ will still be ~descr_1~ and the value of ~ident~ will be ~descr_N~.
-    All intermediate descriptions, are simple there for ensuring the inequality above.
-
+    All "in between" descriptions, are simple there for ensuring the inequality above.
+  - if the description forms a fully defined object, for example ~a: 362~, then the object will become
+    an unchangable constant. Use ~a: s32 = 362~ to create a variable of that type. Note how variables,
+    unlike constants, need an explicit type.
+    
 **** Arrays
 - Declare an array using ~ident : description[x]~ where ~x > 0~. ~x~ can be entirely excluded, to declare a
   one dimensional array of unspecified length.
@@ -16,7 +19,6 @@
 **** Object Signifiers
 Put them in front of the identifier: ~signifier ident: description~.
 | ~type~         | The object is just a type, it can't be modified, and won't be part of the data in the object. |
-| $\vert{}$      | The object will stay constant, once defined.                                                  |
 | ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.                 |
 | ~exr~          | The object is accessable from inside HotGlue, but will be read externally.                    |
 | ~exw~          | As above, but will be written to externally.                                                  |
@@ -87,9 +89,12 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 - To create a data object (or type) ~A~ *from a function object* ~B~, use ~A: B(args)~, where ~args~
   is a list of the required arguments, which are again seperated by semicolons.
 - It is not possible to create a function object from a function object (as in currying).
+  
+*** Assigning a value
+- For assigning a value to a variable use ~a = value~, where the condition ~value < a~ must be satisfied.
 
 ** Procedures
-- Procedures are ordered sets of actionable statements such as ~a = b~. They are will be executed in the
+- Procedures are ordered sets of actionable statements such as ~a = b~. They will be executed in the
   order they were declared in.
 - They can't contain any object declarations, such that there are no temporary objects.
   

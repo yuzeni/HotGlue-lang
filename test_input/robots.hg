@@ -15,12 +15,12 @@ Mesh: (Mesh_content, n_verts: u32, n_ind: u32)
 Joint_type: ident: { BALL, LINEAR, HINGE, FIXED }
 
 Joint: {
-    | Joint_type:this
-    | part_a: ident from Part
-    | part_a_jpos: f32[3]
-    | part_b: ident from Part
-    | part_b_jpos: f32[3]
-    | joint_normal: f32[3] req Joint_type == LINEAR || Joint_type == HINGE
+    Joint_type:this
+    part_a: ident from Part
+    part_a_jpos: f32[3]
+    part_b: ident from Part
+    part_b_jpos: f32[3]
+    joint_normal: f32[3] req Joint_type == LINEAR || Joint_type == HINGE
     joint_force: f32[3]
 }
 
@@ -50,8 +50,8 @@ Mechanical_part: (n_joints: u32)
 }
 
 Robot: {
-    | mech_parts: Mechanical_part[]
-    | parts: Part[]
+    mech_parts: Mechanical_part[]
+    parts: Part[]
     Time: 0 req Time from this\this.all == this
     update_frequency: Time
     
@@ -75,9 +75,8 @@ Render_buffer: {
     Time: this
 }
 
-Rasterizer: (t: symbol
-             Mesh: this         req Time from this\this.all == t,
-             Render_buffer:this req this.Time == t)
+Rasterizer: (Mesh: this         req Time from this\this.all == t,
+             Render_buffer:this req this.Time == Mesh.t)
 {
     funCUDA rasterize_triangles(Mesh, Render_buffer)
 } -> {Render_buffer}
@@ -92,12 +91,11 @@ Joint_to_Constraint: (Joint)
     constraint: Constraint /*some conversion procedure*/
 } -> {constraint}
 
-Physics: (t: symbol
-          exlayout SoA meshes: Mesh[]: all Part.Mesh req all Time from this.Mesh == t && t == future_time - dt
+Physics: (exlayout SoA meshes: Mesh[]: all Part.Mesh req all Time from this.Mesh == t:symbol && t == future_time - dt
           constraints: Constraint[]: Joint_to_Constraint(all Mechanical_part.joints.Joint)
-          future_time: Time
-          | dt: f32: 0.1 * Seconds)
+          future_time: Time)
 {
+    dt: 0.1 * Seconds
     funCUDA calc_physics(meshes, constraints)
     meshes\physics_update += dt
 } -> { meshes }

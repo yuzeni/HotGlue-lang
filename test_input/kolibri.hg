@@ -52,25 +52,25 @@ type lbm_fluid: exobj {
     
     attribs = {
     
-        | si_origin: f32[3]
-        | si_size: f32[3] req this >= 0 // for all 3 in the set this
-        | lbm_size: u32[3]
-        | si_max_velo: f32 req in_range(this, 0, 60)
-        | lbm_max_velo: f32 req in_range(this, 1.5, 2.2)
-        | si_kinematic_visc: Unit(f32, "sqr_m_per_s")
-        | domain_init: u8 = 1
-        | collision_operator: COLLISION_OPERATOR
-        | lattice_store_n_buffers: u8: {1,2}
-        | lbm_descrete_velos: u32
-        | domain_bdry_mx: DOM_BDRYS
-        | domain_bdry_my: DOM_BDRYS
-        | domain_bdry_mz: DOM_BDRYS
-        | domain_bdry_px: DOM_BDRYS
-        | domain_bdry_py: DOM_BDRYS
-        | domain_bdry_pz: DOM_BDRYS
-        | lattice_storage: {f16, f32}
-        | lattice_intersec_storage: {f16, f32}
-        | path_to_some_external_data: str
+        si_origin: f32[3]
+        si_size: f32[3] req this >= 0 // for all 3 in the set this
+        lbm_size: u32[3]
+        si_max_velo: f32 req in_range(this, 0, 60)
+        lbm_max_velo: f32 req in_range(this, 1.5, 2.2)
+        si_kinematic_visc: Unit(f32, "sqr_m_per_s")
+        domain_init: u8 = 1
+        collision_operator: COLLISION_OPERATOR
+        lattice_store_n_buffers: u8: {1,2}
+        lbm_descrete_velos: u32
+        domain_bdry_mx: DOM_BDRYS
+        domain_bdry_my: DOM_BDRYS
+        domain_bdry_mz: DOM_BDRYS
+        domain_bdry_px: DOM_BDRYS
+        domain_bdry_py: DOM_BDRYS
+        domain_bdry_pz: DOM_BDRYS
+        lattice_storage: {f16, f32}
+        lattice_intersec_storage: {f16, f32}
+        path_to_some_external_data: str
 	
         exr r_opacity: f32 req in_range(this, 0, 1)
         exr r_opacity_fade: f32 req in_range(this, 0, 1)
@@ -88,7 +88,7 @@ type lbm_fluid: exobj {
 o69: lbm_fluid {
 
     id: 69
-    id_interact_list: {234, 34564, 123}
+    id_interact_list = {234, 34564, 123}
     attribs: {
         si_origin: {0,0,0}
         si_size: {12,554,22}

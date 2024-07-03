@@ -147,4 +147,4 @@ enum class Type_compare {
 };
 
 class Parser;
-Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser parser);
+Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser& parser);

@@ -34,7 +34,7 @@ Ast_node *node_delete(Ast_node *node)
     return alt_sub;
 }
 
-Ast_node *super_copy_expression_in_new_scope(Ast_node *node, Parser& parser)
+Ast_node *super_copy_expression_in_new_scope(Ast_node *node, Parser& parser) // UNTESTED
 {
     Ast_node* new_node = copy_expression_in_new_scope(node, parser);
     if(node->alt_sub) {
@@ -44,13 +44,13 @@ Ast_node *super_copy_expression_in_new_scope(Ast_node *node, Parser& parser)
     return new_node;
 }
 
-Ast_node *copy_expression_in_new_scope(Ast_node *node, Parser& parser)
+Ast_node *copy_expression_in_new_scope(Ast_node *node, Parser& parser) // UNTESTED
 {
     Ast_node* new_node = new Ast_node;
     new_node->type_result = node->type_result;
     new_node->type_flags = node->type_flags;
     if(node->id) {
-	HG_DEB_assert(node->tkn.type == tkn_type, "");
+	HG_DEB_assert(node->tkn.type == tkn_ident, "");
 	new_node->id = parser.ast.add_ident(node, parser.scope_info.scope_ident);
 	HG_DEB_assert(new_node->id, "It must be guaranteed that the object can be copied");
     }

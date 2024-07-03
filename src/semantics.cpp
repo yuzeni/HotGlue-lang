@@ -52,17 +52,17 @@ static Type_compare compare_base_types(Type_enum type_a, Type_enum type_b)
     return Type_compare::Disjoint;
 }
 
-Type_compare compare_data_types(Ast_node *node_a, Ast_node *node_b, Parser parser)
+Type_compare compare_data_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
 {
     return Type_compare::Disjoint;
 }
 
-Type_compare compare_function_types(Ast_node *node_a, Ast_node *node_b, Parser parser)
+Type_compare compare_function_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
 {
     return Type_compare::Disjoint;
 }
 
-Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser parser)
+Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
 {
     if(node_a->type_result == T_Decl_ref)
 	node_a = parser.ast.find_object_with_id(node_a->id);
@@ -70,7 +70,7 @@ Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser parser)
 	node_b = parser.ast.find_object_with_id(node_b->id);
     
     HG_DEB_assert(node_a && node_b, "");
-    HG_DEB_assert(node_a->typ_result != T_Decl_ref && node_b->type_result != T_Decl_ref, "");
+    HG_DEB_assert(node_a->type_result != T_Decl_ref && node_b->type_result != T_Decl_ref, "");
 
     if((node_a->type_result == T_Data_Object)
 	&& (node_b->type_result == T_Data_Object))

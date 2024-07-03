@@ -4,15 +4,12 @@
 #include "tdop_functions.hpp"
 
 #include <cstdint>
-#include <limits>
-#include <cmath>
 
 #include "ast.hpp"
 #include "lexer.hpp"
 #include "semantics.hpp"
 #include "parser.hpp"
 
-#include "utils.hpp"
 #include "log_and_debug.hpp"
 
 static bool add_single_sub(Ast_node *node, Ast_node *sub)
@@ -605,43 +602,3 @@ Ast_node *led_dot(LED_ARGS)
     
     return node;
 }
-
-// // NOTE: left can be a set or identifer
-// Ast_node *led_to_decl(LED_ARGS)
-// {
-//     Ast_node* node = led_normal(tkn_type, lexer, parser, left, super);
-//     if(left->tkn.type == tkn_ident) {
-// 	uint64_t left_id = parser.ast.find_ident(left, parser.scope_info.scope_hash);
-// 	if(!left_id) {
-// 	    lexer.parsing_error(left->tkn, "This object is not in scope.");
-// 	    return node;
-// 	}
-// 	left->id = left_id;
-// 	// CONTINUE HERE
-//     }
-//     return node;
-// }
-
-// static Ast_node *led_to_imp(LED_ARGS);
-// static Ast_node *led_not_to (LED_ARGS);
-// static Ast_node *led_func_body(LED_ARGS);
-// static Ast_node *led_set_eq(LED_ARGS);
-// static Ast_node *led_update_add(LED_ARGS);
-// static Ast_node *led_update_sub(LED_ARGS);
-// static Ast_node *led_update_mul(LED_ARGS);
-// static Ast_node *led_update_div(LED_ARGS);
-
-// static Ast_node *led_or(LED_ARGS);
-// static Ast_node *led_and(LED_ARGS);
-// static Ast_node *led_eq(LED_ARGS);
-// static Ast_node *led_neq(LED_ARGS);
-// static Ast_node *led_less(LED_ARGS);
-// static Ast_node *led_greater(LED_ARGS);
-// static Ast_node *led_less_eq(LED_ARGS);
-// static Ast_node *led_greater_eq(LED_ARGS);
-// static Ast_node *led_add(LED_ARGS);
-// static Ast_node *led_sub(LED_ARGS);
-// static Ast_node *led_mul(LED_ARGS);
-// static Ast_node *led_div(LED_ARGS);
-// static Ast_node *led_modulo(LED_ARGS);
-// static Ast_node *led_pow(LED_ARGS); 

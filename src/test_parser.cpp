@@ -35,6 +35,6 @@ int main() {
     // std::cout << "\nnumber of tokens: " << tkns.size() << '\n';
 
     Parser parser;
-    parser.parse_file("../test_input/type_test.hg");
-    parser.ast.print();
+    // parser.parse_file("../test_input/type_test.hg");
+    // parser.ast.print();
 }
