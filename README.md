@@ -1,46 +1,28 @@
 # HotGlue-lang
 
-A language for simply gluing things together, because duct tape and screws are overrated.
+A language for gluing things together.
 <hr>
 
 ## The intention
 
-Often, implementing functionality is much easier in an isolated context, than it is within a large application.
-And this is justified, since everything has to, not just work, but work *together* in harmony and with efficiency.
-However this is not fun because it restraints bigger projects. With HotGlue-lang I want to test how much
-of the implementation of the interplay can be hidden behind a declarative descprition of the desired behaviour,
-between independent code blocks (functions), which share an interface standard.
+The project is an experiment for exploring the usefullness of a language, made just for running functions from
+other languages. The data types and functions as well as the target result are described in the language, a path
+to the target result will then be generated.\
 
-## The idea
+HotGlue targets heterogenous and accelerated computing, which is reflected in the supported languages:
+CUDA, OpenCL and C.
 
-HotGlue assumes that every functionality you want to include might require some *ingredients* and might produce some
-*products*, which themselves could be ingredients for other functions. The functionality might have other *sideffects*,
-but these are unknown to HotGlue, which makes HotGlue a functional language, from it's perspective.\
-The *ingredients* and *products* represent all of the information about the functionality that is available to HotGlue,
-in addition to the source file location, function name and source language where the functionality is implemented inside
-a C, CUDA or OpenCL function/kernel.\
-For this to work, a really good type system is necessary. Such that it is easy to distribute and select these products.
-This type system should also be trivially translatable to C-types.\
-\
-The declarative elements of HotGlue find use in describing behaviour. For instance the keyword `req` poses a boolean
-requirement on any statement and the keyword `trigger` activates an imperative procedure at any time on a boolean state
-change to true.\
-A HotGlue script contains at least one instance of the imperative keyword `do`, which is similarly important to the
-main function in C, but instead of representing the *entry* point. Think of it as the *exit*, because it declares the
-last *product* that will be produced by the program, the final state. It is the job of HotGlue to figure out how to get
-there, while juggling all the requirements and sideeffects. This is how HotGlue can be usefull.\
-\
-In the example below, a frame with the attribute Time set to 10 Seconds, which must be produced by the `last` Renderer,
-which is the last Renderer object in the execution tree (if a single one exists), is saved to disk. Where `save_image` is
-just a wrapper for a C function. `last X from all` avoids ambiguities if there are multiple renderers for different objects,
-which feed into each other.
-```c
-do save_image("frame/path.png", last Frame(Time: 10 * Second) from all Renderer)
-```
-This description of the final state will in a sense *collapse* the description of the behaviour (the HotGlue program)
-into an executable thing.
+## How it works
+
+After a source file is included, it's functions can be called with normal arguments and/or constant arguments.
+The constant arguments are incorporated during compilation of the source file.\
+The function is expected to mutate it's arguments or return an object.\
+Types can be defined for interfacing between the functions.\
+Declarative requirements and imperative logic define the programm-flow.\
+All objects exist from the beginning to the end of the execution.\
+New objects can be added or bigger changes made at runtime in the interactive mode with Hot recompilation.\
 
 ## Building on Windows
 
-Run the `build.bat` script from the Microsoft Visual Studio _"x64 Native Tools Command Prompt"_ or from any command prompt with the vcvars64.bat environment.\
+Run the `build.bat` script from the Microsoft Visual Studio _"x64 Native Tools Command Prompt"_ or from any command prompt with the `vcvars64.bat` environment.\
 Alternatively, a prebuilt windows executable is already located in the build directory.

@@ -97,9 +97,9 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
     table[tkn_where]       = {15, 14, nud_error, led_normal};
     
     /* grouping */
-    table['(']             = {15, 0, nud_bracket, led_parenthesis};
+    table['(']             = {15, 0, nud_parenthesis, led_parenthesis};
     table['[']             = {15, 0, nud_bracket, led_bracket};
-    table['{']             = {15, 0, nud_bracket, led_brace};
+    table['{']             = {15, 0, nud_brace, led_brace};
     table[')']             = {0, 0, nud_delimiter};
     table[']']             = {0, 0, nud_delimiter};
     table['}']             = {0, 0, nud_delimiter};
@@ -126,17 +126,18 @@ consteval std::array<Semantic_code, tkn_SIZE> get_tkn_semantics_table()
 
 inline constexpr auto tkn_semantics_table = get_tkn_semantics_table();
 
-bool tkn_legal_in_global_space(Token_enum type);
+inline bool node_legal_in_global_space(Ast_node* node) { return check_type_flag(node, TF_Declaration) || node->tkn.type == tkn_do; }
 
 // parser semantics
 
-constexpr bool is_declare_signifier_tkn(Token_enum tkn) {return tkn == '|' || tkn == '$' || (tkn >= tkn_is_type && tkn <= tkn_SoA); }
+constexpr bool is_declare_signifier_tkn(Token_enum tkn) { return tkn == '|' || tkn == '$' || (tkn >= tkn_is_type && tkn <= tkn_SoA); }
 
 // type semantics
 
-constexpr bool is_base_type(Type_enum type) {return type >= T_i8 && type <= T_placeholder; }
+constexpr bool is_base_type(Type_enum type) { return type >= T_i8 && type <= T_placeholder; }
 constexpr bool is_base_type_integer(Type_enum type) { return type >= T_i8 && type <= T_u64; }
 constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
+constexpr bool is_value_type(Type_enum type) { return is_base_type(type) && type != T_placeholder; }
 
 enum class Type_compare {
     Equal,

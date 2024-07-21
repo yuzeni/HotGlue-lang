@@ -234,8 +234,7 @@ Token_enum keyword_compare(const std::string_view sv)
     }
 }
 
-std::optional<Token> check_for_operator(char **p, char *eof, Token_enum type,
-                                        const char *op)
+std::optional<Token> check_for_operator(char **p, char *eof, Token_enum type, const char *op)
 {
     if((*p)+strlen(op) >= eof)
 	return {};
@@ -247,27 +246,27 @@ std::optional<Token> check_for_operator(char **p, char *eof, Token_enum type,
     return Token{type, *p - i};
 }
 
-bool is_whitespace(char c)
+static bool is_whitespace(char c)
 {
     return c == ' ' || c == '\n' || c == '\t' || c == '\f' || c == '\r' || c == '\v';
 }
 
-bool is_new_line(char c)
+static bool is_new_line(char c)
 {
     return c == '\n' || c == '\f' || c == '\r';
 }
 
-bool is_alpha(char c)
+static bool is_alpha(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
-bool is_digit(char c)
+static bool is_digit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-bool is_simple_char(char c)
+static bool is_simple_char(char c)
 {
     return (c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~');
 }

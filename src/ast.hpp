@@ -7,14 +7,17 @@
 #include "lexer.hpp"
 #include "utils.hpp"
 
+// all types except 'T_All' can be either a declaration or a reference.
 enum Type_enum : uint16_t {
     T_None = 0,
-    T_All, // a special unnamed object
-    T_Function_Object,
-    T_Data_Object,
-    T_Decl_ref,
-    T_Array, // single or multidimensional
+    T_All,             // This 'type' includes all objects in the global scope. It is a reference to everything.
+    T_Function_Object, // An identifier with this type is a function object or type.
+    T_Data_Object,     // An identifier with this type is a data object or data type.
+    T_Array,           // single or multidimensional.
+    T_Procedure,       // A block of code with mutations
+    T_List,            // A listing of objects
     
+    // base types.
     T_i8,
     T_i16,
     T_i32,
@@ -33,9 +36,7 @@ enum Type_enum : uint16_t {
     T_symbol,
     T_placeholder,
 
-    T_SIZE
-    // list all base types!! And possible composite structures (array, etc)
-    
+    T_SIZE,
 };
 
 inline const char *type_enum_name_table[T_SIZE] {
@@ -43,8 +44,10 @@ inline const char *type_enum_name_table[T_SIZE] {
     "All",
     "Function-Object",
     "Data-Object",
-    "Declaration-Reference",
     "Array",
+    "Procedure",
+    "List",
+    
     "i8",
     "i16",
     "i32",
@@ -61,7 +64,7 @@ inline const char *type_enum_name_table[T_SIZE] {
     "bool",
     "ident_type",
     "symbol",
-    "placeholder"
+    "placeholder",
 };
 
 struct Min_Max {
@@ -93,19 +96,21 @@ inline constexpr auto Type_num_limits_table = get_type_num_limits_table();
 
 enum Type_flags : uint32_t {
     TF_None            = 0,
-    TF_Depends_on_all  = 1,
-    TF_Complete_const  = 1 << 1,
-    TF_Overdefined     = 1 << 2,
-    TF_Defined         = 1 << 3,
-    TF_Underdefined    = 1 << 4,
-    TF_Extern          = 1 << 5,
-    TF_Exread          = 1 << 6,
-    TF_Exwrite         = 1 << 7,
-    TF_AoS             = 1 << 8,
-    TF_SoA             = 1 << 9,
-    TF_Pure_type       = 1 << 10,
-    TF_Has_placeholder = 1 << 11,
-    TF_Declaration     = 1 << 12
+    TF_Depends_on_all  = 1,       // the expression contains at least once on 'all'
+    TF_Complete_const  = 1 << 1,  // the expression is completely constant
+    TF_Defined         = 1 << 2,  // the object is not ambiguous.
+    TF_Underdefined    = 1 << 3,  // the object is ambiguous.
+    TF_Extern          = 1 << 4,  // no interal rights or reads, exclusively external.
+    TF_Exread          = 1 << 5,  // external reads expected
+    TF_Exwrite         = 1 << 6,  // external writes expected
+    TF_AoS             = 1 << 7,  // memory layout
+    TF_SoA             = 1 << 8,  // memory layout
+    TF_Pure_type       = 1 << 9,  // the object can never convert to being an object, even when it is fully defined.
+    TF_Has_placeholder = 1 << 10, // the expression has at least one placeholder
+    TF_Value           = 1 << 11, // the object is a concrete value
+    TF_Declaration     = 1 << 12, // the identifier is declared as an object at this exact point.
+    TF_Reference       = 1 << 13, // the identifier is a reference to an object declaration.
+    TF_Argument        = 1 << 14, // the object is an argument, it has the () brackets
 };
 
 struct Ast_node {
@@ -128,15 +133,27 @@ Ast_node *node_delete(Ast_node *node);
 class Parser;
 Ast_node *copy_expression_in_new_scope(Ast_node *node, Parser &parser);
 
-inline void add_type_flag(Ast_node *node, Type_flags type_flag) {
-    node->type_flags = Type_flags(node->type_flags | type_flag);
+inline void add_type_flag(Ast_node *node, Type_flags type_flag)
+{
+    if(!(node->type_flags & type_flag))
+	node->type_flags = Type_flags(node->type_flags | type_flag);
+}
+
+inline bool check_type_flag(const Ast_node *node, Type_flags type_flag)
+{
+    return node->type_flags & type_flag;
+}
+
+inline bool check_type_result_weak(const Ast_node *node, Type_enum type_result)
+{
+    return node->type_result == type_result || (check_type_flag(node, TF_Has_placeholder) && node->type_result == T_None);
 }
 
 enum Print_ast_enum : uint64_t {
     PN_Content     = 1,
     PN_Super       = 1 << 1,
     PN_Type_result = 1 << 2,
-    PN_Type_flags  = 1 << 4,
+    PN_Type_flags  = 1 << 3,
     PN_Ident_idx   = 1 << 4,
 };
 
@@ -157,6 +174,7 @@ struct Ast {
 	global_scope.id = utils::default_str_hash_value;
     }
 
+    
     Hash find_ident_in_scope(Ast_node *ident_node, Ast_node* scope_super);
     Hash find_ident(Ast_node* node, Ast_node* scope_super);
     Hash add_ident(Ast_node* ident_node, Ast_node* scope_super);

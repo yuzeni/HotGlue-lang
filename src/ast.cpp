@@ -104,7 +104,9 @@ Hash Ast::find_ident(Ast_node *node, Ast_node* scope_super)
 	Hash id = 0;
 	while(id == 0 && scope_super) {
 	    id = find_ident_in_scope(node, scope_super);
-	    scope_super = scope_super->super;
+	    do{
+		scope_super = scope_super->super;
+	    } while(scope_super && scope_super->tkn.type != tkn_ident && scope_super->tkn.type != tkn_global_scope);
 	}
 	return id;
     }
@@ -122,7 +124,7 @@ Hash Ast::find_ident(Ast_node *node, Ast_node* scope_super)
 
 // returns 0 if the ident was already added.
 // returns the idents new id otherwise, it will also write id to that node.
-Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
+Hash Ast::add_ident(Ast_node *ident_node, Ast_node *scope_super)
 {
     HG_DEB_assert(ident_node->tkn.type == tkn_ident, "expected tkn_ident");
     
@@ -137,6 +139,7 @@ Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
 	if(itr == identifier_set.end()) {
 	    identifier_set.insert({id, ident_node});
 	    ident_node->id = id;
+	    std::cout << "add_ident (id: " << id <<  "): " << ident_node->tkn.sv << '\n';
 	    return id;
 	}
 	++id;
@@ -144,6 +147,7 @@ Hash Ast::add_ident(Ast_node *ident_node, Ast_node* scope_super)
 	if(itr_cnt > 10000)
 	    HG_DEB_error("infinite loop");
     } while(itr->second->tkn.sv != ident_node->tkn.sv);
+    std::cout << "add_ident (id: 0): " << ident_node->tkn.sv << '\n';
     return 0;
 }
 
@@ -185,8 +189,6 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	    std::cout << "Depends_on_all ";
 	if(node->type_flags & TF_Complete_const)
 	    std::cout << "Complete_const ";
-	if(node->type_flags & TF_Overdefined)
-	    std::cout << "Overdefined ";
 	if(node->type_flags & TF_Defined)
 	    std::cout << "Defined ";
 	if(node->type_flags & TF_Underdefined)
@@ -203,6 +205,12 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	    std::cout << "SoA ";
 	if(node->type_flags & TF_Pure_type)
 	    std::cout << "Pure_type ";
+	if(node->type_flags & TF_Has_placeholder)
+	    std::cout << "TF_Has_placeholder ";
+	if(node->type_flags & TF_Declaration)
+	    std::cout << "TF_Declaration ";
+	if(node->type_flags & TF_Reference)
+	    std::cout << "TF_Reference ";
 	std::cout << HG_END_COLOR;
     }
 

@@ -127,7 +127,7 @@ get_cc_count: (fluid: lbm_fluid)
     fluid.attribs.CC_count = 0
     
     expand (mesh: Mesh: meshes) {
-        funCUDA get_cc_count(mesh)(fluid)
+        funCUDA my_cuda.get_cc_count(mesh)(fluid)
     }
     
     fluid.attribs.CC_count.time = fluid.Time
@@ -139,7 +139,7 @@ calc_ccq_intersec: (fluid: lbm_fluid req this.attribs.CC_count.time == fluid.Tim
     meshes: Mesh[]: Mesh from all where first id from this.\all <= fluid.id_interac_list && first Time from Mesh\all == fluid.Time)
     expand (mesh: Mesh: meshes) {
         fluid.attribs.CC_count = 0
-        funCUDA calc_ccq_intersections(mesh, fluid.attribs.CC_count)(fluid)
+        funCUDA my_cuda.calc_ccq_intersections(mesh, fluid.attribs.CC_count)(fluid)
     }
     fluid.attribs.CCQ.time = fluid.Time
 } -> {fluid, meshes}
@@ -149,19 +149,19 @@ type Renderer: (Frame:this, _) {_} -> { Frame, _ }
 rasterizer: Renderer: (frame_buffer: Frame
                        mesh: Mesh req this\Time == frame_buffer.Time)
 {
-    funCUDA mesh_rasterizer(frame_buffer, mesh)
+    funCUDA my_cuda.mesh_rasterizer(frame_buffer, mesh)
 } -> {frame_buffer, mesh}
 
 fluid_Renderer: (frame_buffer: Frame
 		 fluid: lbm_fluid req this.attribs.DDF\Time == frame_buffer.Time)
 {
-    funCUDA lbm_fluid_renderer(frame_buffer, using fluid.attribs._ DDF, r_opacity, r_opacity_fade, r_ray_step_size, r_rgb_color_scheme)(fluid)
+    funCUDA my_cuda.lbm_fluid_renderer(frame_buffer, using fluid.attribs._ DDF, r_opacity, r_opacity_fade, r_ray_step_size, r_rgb_color_scheme)(fluid)
 } -> { frame_buffer !-> rasterizer, fluid }
 
 Unit: {value: Numeric, unit: str}
 
 save_image: (str dest_path, extern Image) {
-    funC write_image_png(dest_path, $Image)
+    funC my_c.write_image_png(dest_path, $Image)
 }
 
 do {

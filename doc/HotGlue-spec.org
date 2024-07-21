@@ -4,8 +4,8 @@
 - An object is declared using ~ident: description~, within any scope.
 - Applying multiple descriptions ~ident: descr_1: descr_2: ...~ is possible, if ~descr_1~ >= ~descr_2~ >= ~...~.
   For example ~a: u64: u32: 5~ is well defined and ~a: u32: u64: 3~ isn't.
-  - However, the type of ~ident~ will still be ~descr_1~ and the value of ~ident~ will be ~descr_N~.
-    All "in between" descriptions, are simple there for ensuring the inequality above.
+  - The type of ~ident~ will then be that of the last description.
+    All previous descriptions, are simple there for ensuring the inequality above.
   - if the description forms a fully defined object, for example ~a: 362~, then the object will become
     an unchangable constant. Use ~a: s32 = 362~ to create a variable of that type. Note how variables,
     unlike constants, need an explicit type.
@@ -18,17 +18,17 @@
   
 **** Object Signifiers
 Put them in front of the identifier: ~signifier ident: description~.
-| ~type~         | The object is just a type, it can't be modified, and won't be part of the data in the object. |
-| ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.                 |
-| ~exr~          | The object is accessable from inside HotGlue, but will be read externally.                    |
-| ~exw~          | As above, but will be written to externally.                                                  |
-| ~exlayout SoA~ | If the object is a HotGlue array of external objects, the external layout will be SoA.        |
-| ~exlayout AoS~ | As above, but the layout will be AoS.                                                         |
+| ~type~         | The object is just a type, it can't be modified, and won't be part of the data in its enclosing object. |
+| ~extern~       | The object is not store inside HotGlue and therefore not directly accessable.                           |
+| ~exr~          | The object is accessable from inside HotGlue, but will also be read externally.                         |
+| ~exw~          | As above, but will also be written to externally.                                                       |
+| ~exlayout SoA~ | If the object is a HotGlue array of external objects, the external layout will be SoA.                  |
+| ~exlayout AoS~ | As above, but the layout will be AoS.                                                                   |
 
 **** On Requirements
-- Pose requirements on the creation of objects using ~ident: description req requirement~.
+Pose requirements on the creation of objects using ~ident: description req requirement~.
 - The object cannot be created if the ~requirement~ evaluates to ~false~.
-  This can cause *runtime errors*, when a value of external origin is used somewhere.
+  This can cause *runtime errors*, when a non-compile-time-constant is used in the ~requirement~.
 - ~requirement~ is still inside the scope of description, so ~this~ would evaluate to ~ident~.
   
 **** On Identifiers
@@ -67,12 +67,12 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 - Everything inside the function object, must be *fully defined*.
 **** ~args~
 - *The arguments* of the function objects can be function and/or data objects.
-  They must be *seperated by semicolons*.
+  They must be *seperated by commas*.
 - Assert additional requirements on any argument using ~req~ as in ~arg req requirement~,
   where ~requirement~ is a boolean expression.
 **** ~procedure~
 - Funcion objects *can't have sideeffects*. They cannot access any objects inside their ~procedure~ ([[*Procedures][Procedures]]),
-  which were not declared inside the funciton object, or passed in as argument.
+  which were not declared inside the function object, or passed as argument.
 **** ~object~
 - Function Objects return the Data Object defined or mentioned in their ~->{}~ structure, if provided with the
   correct arguments, using ~funv_obj(param_1, param_2, ...)~.
@@ -81,31 +81,34 @@ In the last example, a *placeholder* is used, to indicate that the arguments are
 ***** ~to~
 - Use the ~object_A to function_object_B~ to force a concatination of the current function object
   to ~function_object_B~, where ~object_A~ is an argument to ~function_object_B~.
+- If ~function_object_B~ accepts more than one argument of type ~object_A~, then the exact position of ~object_A~ as
+  argument can be specified with a placeholder construct ~(..., _, object_A, _, ...) to function_object_B~.
   
 *** Object instantiation
 - To create a data object (or type) ~A~ *from another data object or data type* ~B~, simply declare ~A: B~.
   Use ~A: B { item_in_B: 5 }~ to access and further narrow the definition of the objects inside the instance of ~B~
   which then becomes ~A~.
 - To create a data object (or type) ~A~ *from a function object* ~B~, use ~A: B(args)~, where ~args~
-  is a list of the required arguments, which are again seperated by semicolons.
-- It is not possible to create a function object from a function object (as in currying).
+  is the list of required arguments, which must be seperated by commas.
+- It is not possible to create a function object from a function object (as it is possible with currying).
   
 *** Assigning a value
 - For assigning a value to a variable use ~a = value~, where the condition ~value < a~ must be satisfied.
 
 ** Procedures
-- Procedures are ordered sets of actionable statements such as ~a = b~. They will be executed in the
-  order they were declared in.
-- They can't contain any object declarations, such that there are no temporary objects.
+Procedures are ordered sets of actionable statements such as ~a = b~. They will be executed in the
+order they were declared in.
+- They *can't contain any object declarations*, such that there are no temporary objects.
   
 ** Scopes
-- A scope is the whole description of an object definition.
-- Objects in enclosing scopes can be accessed from within the enclosed scope, if they were declared before that scope.
+- A new scope is created with a new object declaration or object modification, where the scope is active during the then following description.
+  Therefore all scopes have an identifier attached to them.
+- Objects in enclosing scopes can be accessed from within the enclosed scope, if they were declared before the
+  beginning of the enclosed scope.
 - The ~this~ keyword can be used in place of the identifier of the current scope.
-- Scopes are produced by [[*Object Declaration][declarations]], [[*The ~expand~ Structure][expands]] and [[*The ~trigger~ Keyword][triggers]].
   
 ** Types
-- Declare types using the ~type~ signifier.
+Declare types using the ~type~ signifier.
 - Types become objects, as soon as they have a clear representation in memory,
   unless they were declared with the ~type~ signifier.
 - Types can be [[*Boolean set ops][compared]].
@@ -268,3 +271,26 @@ These work *only on Objects*.
 - ~size()~ returns a value of type ~u64~.
 **** Exception Handling
 - if ~object~ is not an object type, a type error will be evoked and ~size()~ will evaluate to ~0~.
+
+** Device Management
+- device info must be inquirable.
+  - an object containing all devices and their info
+    #+BEGIN_SRC hotglue
+      devices: {
+          type dtype:ident: {CPU:ident, GPU:ident}
+          CPU_0: {
+              device_type: CPU
+              core0, core1, core2, core4
+          }
+          GPU_0: {
+              device_type: GPU
+              i32 CUDA_support: 12
+              i32 OpenCL_support:3
+              str name: "Gefore gtx 1080"
+              u64 cuda_cores: 2000
+              u64 memory: 8 * Gigabyte
+          }
+      }
+    #+END_SRC
+  - the object can be 
+- devices must be assignable to function calls.

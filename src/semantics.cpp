@@ -5,8 +5,6 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
-bool tkn_legal_in_global_space(Token_enum type) {return type == ':' || type == tkn_do;}
-
 #define TC_BASE_TYPES_TABLE_IDX(a, b) (int(a) * T_SIZE + int(b))
 
 consteval std::array<Type_compare, T_SIZE * T_SIZE> get_base_type_compare_table()
@@ -64,13 +62,13 @@ Type_compare compare_function_types(Ast_node *node_a, Ast_node *node_b, Parser& 
 
 Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
 {
-    if(node_a->type_result == T_Decl_ref)
+    if(check_type_flag(node_a, TF_Reference))
 	node_a = parser.ast.find_object_with_id(node_a->id);
-    if(node_b->type_result == T_Decl_ref)
+    if(check_type_flag(node_b, TF_Reference))
 	node_b = parser.ast.find_object_with_id(node_b->id);
     
     HG_DEB_assert(node_a && node_b, "");
-    HG_DEB_assert(node_a->type_result != T_Decl_ref && node_b->type_result != T_Decl_ref, "");
+    HG_DEB_assert(!check_type_flag(node_a, TF_Reference) && !check_type_flag(node_b, TF_Reference), "");
 
     if((node_a->type_result == T_Data_Object)
 	&& (node_b->type_result == T_Data_Object))

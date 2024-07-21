@@ -230,3 +230,8 @@ bool is_delim_tkn_left(Token_enum type);
 bool is_delim_tkn_right(Token_enum type);
 bool is_binary_set_op(Token_enum type);
 bool is_reference_tkn(Token_enum type);
+
+constexpr bool is_assignment_operator_tkn(Token_enum type)
+{
+    return type == '=' || (type >= tkn_update_add && type <= tkn_update_mod);
+}

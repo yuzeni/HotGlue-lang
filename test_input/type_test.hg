@@ -1,10 +1,10 @@
 
-type Numeric: {i8, i16, i32, i64, u8, u16, u32, u64, f8, f16, f32, f64}
-
 type A: {
     a: u32
     b: (c:_) {_} -> {c}
 }
+
+type Numeric: {i8, i16, i32, i64, u8, u16, u32, u64, f8, f16, f32, f64}
 
 type B: {
     g: 54
@@ -13,11 +13,10 @@ type B: {
 
 C: A: B
 
-D: A {
-    a = 5
-    b = B.l
-}
-
+// D: A {
+//     a = 5
+//     b = B.l
+// }
 
 // E: 6
 

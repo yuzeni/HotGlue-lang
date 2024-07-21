@@ -2,3 +2,4 @@
 -Wall
 -Wextra
 -IC:/src/Tracy-0.10/tracy-0.10/public
+HG_ENABLE_LOG_COLORS

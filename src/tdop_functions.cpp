@@ -99,9 +99,14 @@ Ast_node *nud_ident(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_ident_type};
     lexer.next_token();
-    node->id = parser.ast.find_ident_in_scope(node, parser.scope_info.scope_ident);
-    if(node->id)
-	node->type_result = T_Decl_ref;
+    if(!is_binary_set_op(super->tkn.type)) { // in this case find_ident would be too early
+	node->id = parser.ast.find_ident(node, parser.scope_info.scope_ident);
+	if(node->id) {
+	    // carry over type information
+	    add_type_flag(node, TF_Reference);
+	    node->type_result = parser.ast.identifier_set.at(node->id)->type_result;
+	}
+    }
     return node;
 }
 
@@ -129,12 +134,14 @@ Ast_node *nud_int(NUD_ARGS)
     
     Ast_node* node = nud_arg(PASS_NUD_ARGS);
     node->type_result = type_result;
+    add_type_flag(node, TF_Value);
     return node;
 }
 
 Ast_node *nud_real(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_f64};
+    add_type_flag(node, TF_Value);
     lexer.next_token();
     return node;
 }
@@ -142,6 +149,7 @@ Ast_node *nud_real(NUD_ARGS)
 Ast_node *nud_string(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_str};
+    add_type_flag(node, TF_Value);
     lexer.next_token();
     return node;
 }
@@ -149,6 +157,7 @@ Ast_node *nud_string(NUD_ARGS)
 Ast_node *nud_true(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_bool};
+    add_type_flag(node, TF_Value);
     lexer.next_token();
     return node;
 }
@@ -156,6 +165,7 @@ Ast_node *nud_true(NUD_ARGS)
 Ast_node *nud_false(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_bool};
+    add_type_flag(node, TF_Value);
     lexer.next_token();
     return node;
 }
@@ -163,6 +173,7 @@ Ast_node *nud_false(NUD_ARGS)
 Ast_node *nud_placeholder(NUD_ARGS)
 {
     Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_placeholder};
+    add_type_flag(node, TF_Has_placeholder);
     lexer.next_token();
     return node;
 }
@@ -177,7 +188,7 @@ Ast_node *nud_exit(NUD_ARGS)
 
 Ast_node *nud_types(NUD_ARGS)
 {
-    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, T_None};
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super, Type_enum(lexer.tkn_at(0).type - tkn_i8 + T_i8)}; // works up until symbol
     lexer.next_token();
     return node;
 }
@@ -294,7 +305,7 @@ Ast_node *nud_arg(NUD_ARGS)
     return node;
 }
 
-Token_enum bracket_opposite(Token_enum tkn_type)
+static Token_enum bracket_opposite(Token_enum tkn_type)
 {
     HG_DEB_assert(is_open_bracket(tkn_type), "token type must be a bracket in %s", __func__);
     switch(tkn_type) {
@@ -311,24 +322,84 @@ Token_enum bracket_opposite(Token_enum tkn_type)
 Ast_node *nud_bracket(NUD_ARGS)
 {
     HG_DEB_assert(is_open_bracket(tkn_type), "token type must be a bracket in nud_bracket");
-    Ast_node* bracket = nullptr;
+    Ast_node* node = nullptr;
     if(!is_delim_tkn_right(lexer.peek_next_token().type)) {
-	bracket = nud_right(tkn_type, lexer, parser, left, super);
-	Ast_node* prev_alt =  bracket->sub;
+	node = nud_right(tkn_type, lexer, parser, left, super);
+	Ast_node* prev_alt =  node->sub;
 
+	if(!is_value_type(prev_alt->type_result))
+	    parser.type_error(prev_alt, "Expected a value type, but got type %s", type_enum_name_table[prev_alt->type_result]);
+
+	if(lexer.tkn_at(0).type != bracket_opposite(tkn_type)) {
+	    parser.type_error(node, "[] Can only contain a single element.");
+	    while(lexer.tkn_at(0).type != bracket_opposite(tkn_type))
+		lexer.next_token();
+	}
+
+	if(check_type_flag(prev_alt, TF_Has_placeholder))
+	    add_type_flag(node, TF_Has_placeholder);
+    }
+    else {
+	lexer.next_token();
+    }
+    lexer.next_token();
+    return node;
+}
+
+Ast_node *nud_brace(NUD_ARGS)
+{
+    HG_DEB_assert(is_open_bracket(tkn_type), "token type must be a bracket in nud_bracket");
+    Ast_node* node = nullptr;
+    
+    if(!is_delim_tkn_right(lexer.peek_next_token().type)) {
+
+	node = nud_right(tkn_type, lexer, parser, left, super);
+	Ast_node* prev_alt =  node->sub;
+
+	bool has_declaration = check_type_flag(prev_alt, TF_Declaration);    // any object gets declared
+	bool has_mutation = is_assignment_operator_tkn(prev_alt->tkn.type);  // any objects gets changed
+	bool has_expression = is_value_type(prev_alt->type_result);          // anything that results in a value
+	bool has_placeholder = check_type_flag(prev_alt, TF_Has_placeholder);
+	
 	// collect all statements within the brackets
 	while(lexer.tkn_at(0).type != bracket_opposite(tkn_type)) {
 	    if(lexer.tkn_at(0).type == tkn_eof) {
-		lexer.parsing_error(lexer.tkn_at(-1), "Missing closing bracket.");
+		lexer.parsing_error(lexer.tkn_at(-1), "Missing closing node.");
 		break;
 	    }
-	    add_alternative_sub(bracket, &prev_alt, parse_expression(lexer, parser, bracket, 0));
+	    add_alternative_sub(node, &prev_alt, parse_expression(lexer, parser, node, 0));
+	    
+	    has_declaration &= check_type_flag(prev_alt, TF_Declaration);
+	    has_mutation &= is_assignment_operator_tkn(prev_alt->tkn.type);
+	    has_expression &= is_value_type(prev_alt->type_result);
+	    has_placeholder &= check_type_flag(prev_alt, TF_Has_placeholder);
 	}
+
+	if (has_mutation)
+	    node->type_result = T_Procedure;
+	else if (has_expression)
+	    node->type_result = T_List;
+	else if (has_declaration)
+	    node->type_result = T_Data_Object;
+
+	if(has_declaration + has_mutation + has_expression > 1)
+	    parser.type_error(node, "An object cannot contain declarations mutations or expressions at the same time.");
+
+	if(has_placeholder)
+	    add_type_flag(node, TF_Has_placeholder);
     }
-    else
+    else {
 	lexer.next_token();
+    }
     lexer.next_token();
-    return bracket;
+    return node;
+}
+
+Ast_node *nud_parenthesis(NUD_ARGS)
+{
+    Ast_node* node = nud_brace(PASS_NUD_ARGS);
+    add_type_flag(node, TF_Argument);
+    return node;
 }
 
 Ast_node *nud_set_op(NUD_ARGS)
@@ -389,7 +460,7 @@ Ast_node *led_parenthesis(LED_ARGS)
     if(!is_func_call(left))
 	return nullptr;
     
-    add_alternative_sub(node, node->sub, nud_bracket(tkn_type, lexer, parser, nullptr, node));
+    add_alternative_sub(node, node->sub, nud_parenthesis(tkn_type, lexer, parser, nullptr, node));
     return node;
 }
 
@@ -409,44 +480,57 @@ Ast_node *led_bracket(LED_ARGS)
 Ast_node *led_brace(LED_ARGS)
 {
     Ast_node* node = left;
+
+    if(check_type_flag(node, TF_Reference)) {
+
+	Ast_node* object = parser.ast.find_object_with_id(node->id);
+	HG_DEB_assert(object, "Object should have been found.");
     
-    if(node->type_result != T_Decl_ref) {
-	parser.type_error(node, "Expected a referene to a declared object, but got type '%s'", type_enum_name_table[node->type_result]);
+	if(object->type_result != T_Data_Object) {
+	    parser.type_error(node, "Expected type '%s', but got '%s'.", type_enum_name_table[T_Data_Object], type_enum_name_table[object->type_result]);
+	    return nullptr;
+	}
+
+	Scope_info enclosing_scope = parser.scope_info.next_scope(node);
+	{
+	    // copy the whole object
+	    add_single_sub(node, copy_expression_in_new_scope(object->sub, parser));
+	    Ast_node* prev_sub = node->sub;
+	    Ast_node* sub = object->sub->alt_sub;
+	    while(sub) {
+		add_alternative_sub(node, &prev_sub, sub);
+		sub = sub->alt_sub;
+	    }
+	    // add what is in the brackets
+	    Ast_node* bracket = nud_brace(tkn_type, lexer, parser, nullptr, node);
+	    if (bracket->type_result == T_Data_Object) {
+		sub = bracket->sub;
+		while(sub) {
+		    add_alternative_sub(node, &prev_sub, sub);
+		    sub = sub->alt_sub;
+		}
+	    }
+	    else {
+		parser.type_error(bracket, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Data_Object], type_enum_name_table[bracket->type_result]);
+	    }
+	    delete bracket;
+	}
+	parser.scope_info.restore_scope(enclosing_scope);
+    
+	return node;
+    }
+    else if (check_type_flag(node, TF_Argument)) {
+	node->alt_sub = nud_brace(tkn_type, lexer, parser, nullptr, node->super);
+	if (!check_type_result_weak(node->alt_sub, T_Procedure)) {
+	    parser.type_error(node->alt_sub, "Expected a procedure, but got type '%s'", type_enum_name_table[node->alt_sub->type_result]);
+	    node_delete(node->alt_sub);
+	}
+	return node;
+    }
+    else {
+	parser.type_error(node, "Expected a reference to a declared object or a list of arguments, but got type '%s'", type_enum_name_table[node->type_result]);
 	return nullptr;
     }
-
-    node->type_result = T_Data_Object;
-    
-    Ast_node* object = parser.ast.find_object_with_id(node->id);
-    HG_DEB_assert(object, "Object should have been found.");
-    
-    if(object->type_result != T_Data_Object) {
-	parser.type_error(node, "Expected type '%s', but got '%s'.", type_enum_name_table[T_Data_Object], type_enum_name_table[object->type_result]);
-	return nullptr;
-    }
-
-    Scope_info enclosing_scope = parser.scope_info.next_scope(node);
-    {
-	// copy the whole object
-	add_single_sub(node, copy_expression_in_new_scope(object->sub, parser));
-	Ast_node* prev_sub = node->sub;
-	Ast_node* sub = object->sub->alt_sub;
-	while(sub) {
-	    add_alternative_sub(node, &prev_sub, sub);
-	    
-	    sub = sub->alt_sub;
-	}
-	Ast_node* bracket = nud_bracket(tkn_type, lexer, parser, nullptr, node);
-	sub = bracket->sub;
-	while(sub) {
-	    add_alternative_sub(node, &prev_sub, sub);
-	    sub = sub->alt_sub;
-	}
-	delete bracket;
-    }
-    parser.scope_info.restore_scope(enclosing_scope);
-    
-    return node;
 }
 
 static Ast_node* handle_declare_signifiers(Ast_node* left, Lexer& lexer)
@@ -457,9 +541,6 @@ static Ast_node* handle_declare_signifiers(Ast_node* left, Lexer& lexer)
     switch(left->tkn.type) {
     case tkn_is_type:
 	type_flags = TF_Pure_type;
-	break;
-    case '|':
-	type_flags = TF_Complete_const;
 	break;
     case tkn_extern:
 	type_flags = TF_Extern;
@@ -507,40 +588,29 @@ Ast_node *led_declare(LED_ARGS)
     lexer.next_token();
     Ast_node* node = left;
     node->super = super;
-
+    
     if(is_declare_signifier_tkn(node->tkn.type))
 	node = handle_declare_signifiers(node, lexer);
-
+    
     if(node->tkn.type != tkn_ident) {
 	lexer.parsing_error(node->tkn, "Expected an identifier, but got '%s'", get_token_name_str(node->tkn.type).c_str());
 	return nullptr;
     }
 
-    add_type_flag(node, TF_Declaration);
-
-    if(parser.scope_info.context_instantiation_object) {
-	// In the cotext, of instantiating an object from a type or object,
-	// the to be declared object should be found in the 'context_instantiation_object'.
-
-	node->id = parser.ast.find_ident_in_scope(node, parser.scope_info.context_instantiation_object);
-	if(!node->id) {
-	    std::string_view ident = parser.scope_info.context_instantiation_object->tkn.sv;
-	    lexer.parsing_error(node->tkn, "This object is not part of the, to be instantiated, object '=%.*s='.", int(ident.length()), ident.data());
-	    return nullptr;
-	}
-    }
-    else if(node->type_result != T_Decl_ref) {
+    // basic declaration
+    if(!check_type_flag(node, TF_Declaration)) {
 	node->id = parser.ast.add_ident(node, parser.scope_info.scope_ident);
 	HG_DEB_assert(node->id, "There shouldn't be any previous declaration of that identifier.");
 	
-	Scope_info this_scope = parser.scope_info.next_scope(node);
+	Scope_info enclosing_scope = parser.scope_info.next_scope(node);
 	{
 	    get_and_add_right_unary(tkn_type, node, lexer, parser);
 	}
-	parser.scope_info.restore_scope(this_scope);
-
-	// TODO: determine the type of node (Data Object, function object, etc.).
+	parser.scope_info.restore_scope(enclosing_scope);
 	
+        node->type_result = node->sub->type_result;
+        add_type_flag(node, TF_Declaration); 
+
 	return node;
     }
     
@@ -558,10 +628,10 @@ Ast_node *led_declare(LED_ARGS)
 	node->type_result = right->type_result;
     }
     else {
-	lexer.parsing_error(node->sub->alt_sub->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
-	node_delete(node->sub->alt_sub);
-	node->sub->alt_sub = nullptr;
+	lexer.parsing_error(right->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
+	node_delete(right);
     }
+
     return node;
 
 }
@@ -574,10 +644,10 @@ Ast_node *led_dot(LED_ARGS)
     add_single_sub(node, left);
 
     if(left->tkn.type == tkn_placeholder)
-	left->type_result = T_Decl_ref;
+	add_type_flag(left, TF_Reference); // not sure if this really makes any sense
     
-    if(left->type_result != T_Decl_ref) {
-	parser.type_error(left, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Decl_ref], type_enum_name_table[left->type_result]);
+    if(!check_type_flag(left, TF_Reference)) {
+	parser.type_error(left, "Expected a reference to a declaration, but got type '%s'.", type_enum_name_table[left->type_result]);
 	return node;
     }
     HG_DEB_assert(left->id, "id must be defined.");
@@ -587,7 +657,7 @@ Ast_node *led_dot(LED_ARGS)
 	get_and_add_right_binary(tkn_type, node, lexer, parser);
 	
 	Ast_node* right = node->sub->alt_sub;
-	if(right->type_result == T_Decl_ref) {
+	if(check_type_flag(right, TF_Reference)) {
 	    HG_DEB_assert(right->id, "id must be defined.");
 	    node->id = parser.ast.find_ident_in_scope(right, parser.scope_info.scope_ident);
 	}
@@ -595,7 +665,7 @@ Ast_node *led_dot(LED_ARGS)
 	    if(right->tkn.type == tkn_ident)
 		lexer.parsing_error(right->tkn, "The identifier is not declared in this scope.");
 	    else
-		parser.type_error(right, "Expected type '%s', but got type '%s'.", type_enum_name_table[T_Decl_ref], type_enum_name_table[right->type_result]);
+		parser.type_error(right, "Expected a reference to a delaration, but got type '%s'.", type_enum_name_table[right->type_result]);
 	}
     }
     parser.scope_info.restore_scope(this_scope);

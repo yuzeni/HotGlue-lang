@@ -43,10 +43,13 @@ Ast_node *nud_left(NUD_ARGS);
 Ast_node *nud_right(NUD_ARGS);
 Ast_node *nud_arg(NUD_ARGS);
 Ast_node *nud_this(NUD_ARGS);
-Ast_node *nud_bracket(NUD_ARGS);
 Ast_node *nud_set_op(NUD_ARGS); // used by: all, first
 Ast_node *nud_error(NUD_ARGS);
 Ast_node *nud_delimiter(NUD_ARGS);
+
+Ast_node *nud_parenthesis(NUD_ARGS);
+Ast_node *nud_brace(NUD_ARGS);
+Ast_node *nud_bracket(NUD_ARGS);
 
 Ast_node *nud_not(NUD_ARGS);
 Ast_node *nud_increment(NUD_ARGS);
