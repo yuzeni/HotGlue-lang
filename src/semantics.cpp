@@ -3,6 +3,7 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "log_and_debug.hpp"
 #include "parser.hpp"
 
 #define TC_BASE_TYPES_TABLE_IDX(a, b) (int(a) * T_SIZE + int(b))
@@ -42,6 +43,7 @@ constexpr auto Base_type_compare_table = get_base_type_compare_table();
 
 static Type_compare compare_base_types(Type_enum type_a, Type_enum type_b)
 {
+    HG_DEB_assert(is_base_type(type_a) && is_base_type(type_b), "must be base types");
     if(type_a == type_b)
 	return Type_compare::Equal;
     
@@ -50,22 +52,138 @@ static Type_compare compare_base_types(Type_enum type_a, Type_enum type_b)
     return Type_compare::Disjoint;
 }
 
-Type_compare compare_data_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
+// TODO: could be a table
+static Type_compare type_compare_sum(Type_compare a, Type_compare b)
 {
+    if (a == Type_compare::Nothing)
+	return b;
+    if (b == Type_compare::Nothing)
+	return a;
+    
+    switch(a) {
+    case Type_compare::Equal:
+	if (b == Type_compare::Equal)
+	    return Type_compare::Equal;
+	if (b == Type_compare::A_subset_B)
+	    return Type_compare::A_subset_B;
+	if (b == Type_compare::B_subset_A)
+	    return Type_compare::B_subset_A;
+	return Type_compare::Intersecting;
+    case Type_compare::A_subset_B:
+	if (b == Type_compare::A_subset_B || b == Type_compare::Equal)
+	    return Type_compare::A_subset_B;
+	return Type_compare::Intersecting;
+    case Type_compare::B_subset_A:
+	if (b == Type_compare::B_subset_A || b == Type_compare::Equal)
+	    return Type_compare::B_subset_A;
+	return Type_compare::Intersecting;
+    case Type_compare::Intersecting:
+	return Type_compare::Intersecting;
+    case Type_compare::Disjoint:
+	if (b == Type_compare::Equal || b == Type_compare::A_subset_B || b == Type_compare::B_subset_A || b == Type_compare::Intersecting)
+	    return Type_compare::Intersecting;
+	return Type_compare::Disjoint;
+    }
+}
+
+static Ast_node *dereference_node(Ast_node* node, Parser& parser)
+{
+    if(node) {
+	while (node->sub && !node->sub->alt_sub) {
+	    node = node->sub;
+	}
+	if (check_type_flag(node, TF_Reference)) {
+	    node = parser.ast.find_object_with_id(node->id);
+	}
+    }
+    return node;
+}
+
+static Type_compare compare_data_objects(Ast_node *node_a, Ast_node *node_b, Parser& parser)
+{
+    
+    Ast_node* sub_a = dereference_node(node_a, parser)->sub;
+    Ast_node* sub_b = dereference_node(node_b, parser)->sub;
+
+    Type_compare tc = Type_compare::Nothing;
+    
+    while(sub_a && sub_b) {
+	tc = type_compare_sum(compare_types(sub_a, sub_b, parser), tc);
+	sub_a = dereference_node(sub_a->alt_sub, parser);
+	sub_b = dereference_node(sub_b->alt_sub, parser);
+    }
+    
+    if(bool(sub_a) ^ bool(sub_b))
+	return Type_compare::Disjoint;
+
+    return tc;
+}
+
+// only checks for placeholder right now (not sure if I need more)
+static Type_compare compare_procedures(Ast_node *node_a, Ast_node *node_b, Parser& parser)
+{
+    HG_DEB_assert(node_a->sub && node_b->sub, "must have subs");
+    if(dereference_node(node_a, parser)->type_result == T_placeholder) {
+	if(dereference_node(node_b, parser)->type_result == T_placeholder)
+	    return Type_compare::Equal;
+	else
+	    return Type_compare::B_subset_A;
+    }
+    if(dereference_node(node_b, parser)->type_result == T_placeholder) {
+	if(dereference_node(node_a, parser)->type_result == T_placeholder)
+	    return Type_compare::Equal;
+	else
+	    return Type_compare::A_subset_B;
+    }
     return Type_compare::Disjoint;
 }
 
-Type_compare compare_function_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
+// checks for matching ordering of returned objects
+// quadratic algorithm (which sucks)
+static Type_compare compare_function_returns(Ast_node *return_a, Ast_node *return_b, Ast_node *arg_a, Ast_node *arg_b, Parser& parser)
 {
-    return Type_compare::Disjoint;
+    HG_DEB_assert(return_a->sub && return_b->sub && arg_a->sub && arg_b->sub, "must have subs");
+    Ast_node* ret_sub_a = dereference_node(return_a, parser)->sub;
+    Ast_node* ret_sub_b = dereference_node(return_b, parser)->sub;
+    Ast_node* arg_sub_a = dereference_node(arg_a, parser)->sub;
+    Ast_node* arg_sub_b = dereference_node(arg_b, parser)->sub;
+
+    while(ret_sub_a && ret_sub_b) {
+	while(arg_sub_a && arg_sub_b && ret_sub_a->id != arg_sub_a->id && ret_sub_b->id != arg_sub_b->id) {
+	    arg_sub_a = dereference_node(arg_sub_a->alt_sub, parser);
+	    arg_sub_b = dereference_node(arg_sub_b->alt_sub, parser);
+	}
+	if(!arg_sub_a || !arg_sub_b)
+	    return Type_compare::Disjoint;
+	
+	ret_sub_a = dereference_node(ret_sub_a->alt_sub, parser);
+	ret_sub_b = dereference_node(ret_sub_b->alt_sub, parser);
+    }
+    
+    if(bool(ret_sub_a) ^ bool(ret_sub_b))
+	return Type_compare::Disjoint;
+
+    return compare_data_objects(return_a, return_b, parser);
+}
+
+static Type_compare compare_function_objects(Ast_node *node_a, Ast_node *node_b, Parser& parser)
+{
+    node_a = dereference_node(node_a, parser);
+    node_b = dereference_node(node_b, parser);
+    
+    HG_DEB_assert(node_a->sub && node_b->sub, "must have subs");
+    Type_compare arg_tc = compare_data_objects(node_a->sub, node_b->sub, parser);
+    HG_DEB_assert(node_a->sub->alt_sub && node_b->sub->alt_sub, "must have alt subs");
+    Type_compare procedure_tc = compare_procedures(node_a->sub->alt_sub, node_b->sub->alt_sub, parser);
+    HG_DEB_assert(node_a->sub->alt_sub->alt_sub && node_b->sub->alt_sub->alt_sub, "must have alt alt subs");
+    Type_compare return_tc = compare_function_returns(node_a->sub->alt_sub->alt_sub, node_b->sub->alt_sub->alt_sub, node_a->sub, node_b->sub, parser);
+    return type_compare_sum(type_compare_sum(arg_tc, procedure_tc), return_tc);
 }
 
 Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
 {
-    if(check_type_flag(node_a, TF_Reference))
-	node_a = parser.ast.find_object_with_id(node_a->id);
-    if(check_type_flag(node_b, TF_Reference))
-	node_b = parser.ast.find_object_with_id(node_b->id);
+    node_a = dereference_node(node_a, parser);
+    node_b = dereference_node(node_b, parser);
     
     HG_DEB_assert(node_a && node_b, "");
     HG_DEB_assert(!check_type_flag(node_a, TF_Reference) && !check_type_flag(node_b, TF_Reference), "");
@@ -73,12 +191,12 @@ Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser)
     if((node_a->type_result == T_Data_Object)
 	&& (node_b->type_result == T_Data_Object))
     {
-	    return compare_data_types(node_a, node_b, parser);
+	    return compare_data_objects(node_a, node_b, parser);
     }
     else if((node_a->type_result == T_Function_Object)
 	    && (node_b->type_result == T_Function_Object))
     {
-	    return compare_function_types(node_a, node_b, parser);
+	    return compare_function_objects(node_a, node_b, parser);
     }
     else if(is_base_type(node_a->type_result) && is_base_type(node_b->type_result)) {
 	return compare_base_types(node_a->type_result, node_b->type_result);

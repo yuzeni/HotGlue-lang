@@ -8,7 +8,7 @@ type Numeric: {i8, i16, i32, i64, u8, u16, u32, u64, f8, f16, f32, f64}
 
 type B: {
     g: 54
-    l: (a:Numeric) {a *= 2} -> {a}
+    l: (a:u32) {a *= 2} -> {a}
 }
 
 C: A: B

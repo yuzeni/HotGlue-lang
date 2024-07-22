@@ -140,6 +140,7 @@ constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8
 constexpr bool is_value_type(Ast_node *node) { return (is_base_type(node->type_result) && node->type_result != T_placeholder) || check_type_flag(node, TF_Reference); }
 
 enum class Type_compare {
+    Nothing,
     Equal,
     Intersecting,
     Disjoint,
