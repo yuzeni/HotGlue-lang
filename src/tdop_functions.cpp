@@ -327,7 +327,7 @@ Ast_node *nud_bracket(NUD_ARGS)
 	node = nud_right(tkn_type, lexer, parser, left, super);
 	Ast_node* prev_alt =  node->sub;
 
-	if(!is_value_type(prev_alt->type_result))
+	if(!is_value_type(prev_alt))
 	    parser.type_error(prev_alt, "Expected a value type, but got type %s", type_enum_name_table[prev_alt->type_result]);
 
 	if(lexer.tkn_at(0).type != bracket_opposite(tkn_type)) {
@@ -358,7 +358,7 @@ Ast_node *nud_brace(NUD_ARGS)
 
 	bool has_declaration = check_type_flag(prev_alt, TF_Declaration);    // any object gets declared
 	bool has_mutation = is_assignment_operator_tkn(prev_alt->tkn.type);  // any objects gets changed
-	bool has_expression = is_value_type(prev_alt->type_result);          // anything that results in a value
+	bool has_expression = is_value_type(prev_alt);          // anything that results in a value
 	bool has_placeholder = check_type_flag(prev_alt, TF_Has_placeholder);
 	
 	// collect all statements within the brackets
@@ -371,7 +371,7 @@ Ast_node *nud_brace(NUD_ARGS)
 	    
 	    has_declaration &= check_type_flag(prev_alt, TF_Declaration);
 	    has_mutation &= is_assignment_operator_tkn(prev_alt->tkn.type);
-	    has_expression &= is_value_type(prev_alt->type_result);
+	    has_expression &= is_value_type(prev_alt);
 	    has_placeholder &= check_type_flag(prev_alt, TF_Has_placeholder);
 	}
 
@@ -428,6 +428,30 @@ Ast_node *led_normal(LED_ARGS)
     add_single_sub(node, left);
     lexer.next_token();
     get_and_add_right_binary(tkn_type, node, lexer, parser);
+    return node;
+}
+
+Ast_node *led_return(LED_ARGS)
+{
+    Ast_node* node = new Ast_node{lexer.tkn_at(0), super};
+    add_single_sub(node, left); // this might add as many subs as there are alt subs
+    lexer.next_token();
+    Ast_node* prev_sub = node->sub;
+    int arg_cnt = 1;
+    if(prev_sub->alt_sub) {
+	prev_sub = prev_sub->alt_sub;
+	++arg_cnt;
+    }
+    get_and_add_next_sub(tkn_type, node, &prev_sub, lexer, parser);
+    ++arg_cnt;
+
+    if(arg_cnt == 3
+       && check_type_flag(node->sub, TF_Argument)
+       && check_type_result_weak(node->sub->alt_sub, T_Procedure)
+       && check_type_result_weak(node->sub->alt_sub->alt_sub, T_List, T_Data_Object)) {
+	node->type_result = T_Function_Object;
+    }
+    
     return node;
 }
 
@@ -501,7 +525,7 @@ Ast_node *led_brace(LED_ARGS)
 		add_alternative_sub(node, &prev_sub, sub);
 		sub = sub->alt_sub;
 	    }
-	    // add what is in the brackets
+	    // add content from the brackets
 	    Ast_node* bracket = nud_brace(tkn_type, lexer, parser, nullptr, node);
 	    if (bracket->type_result == T_Data_Object) {
 		sub = bracket->sub;

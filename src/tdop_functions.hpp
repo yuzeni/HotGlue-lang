@@ -68,7 +68,7 @@ Ast_node *led_declare(LED_ARGS);
 Ast_node *led_dot(LED_ARGS);
 Ast_node *led_error(LED_ARGS);
 
-Ast_node *led_to_imp(LED_ARGS);
+Ast_node *led_return(LED_ARGS);
 Ast_node *led_not_to (LED_ARGS);
 Ast_node *led_func_body(LED_ARGS);
 Ast_node *led_set_eq(LED_ARGS);

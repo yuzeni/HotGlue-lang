@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <utility>
 #include <string>
 #include <initializer_list>
@@ -39,4 +40,12 @@ consteval uint64_t cte_hash_c_str(const char *str, uint64_t hash = utils::defaul
     while((c = *(str++)))
 	hash = (hash * 33) ^ c;
     return hash;
+}
+
+template <typename T>
+constexpr T log2i(T x)
+{
+    int cnt = 0;
+    while(x >>= 1) ++cnt;
+    return cnt;
 }

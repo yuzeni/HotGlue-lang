@@ -185,32 +185,10 @@ void Ast::print_node(const Ast_node *node, Print_ast_enum config, int depth) con
 	std::cout << HG_BRIGHT_BLUE_COLOR;
 	if(node->type_flags)
 	    std::cout << " TFs: ";
-	if(node->type_flags & TF_Depends_on_all)
-	    std::cout << "Depends_on_all ";
-	if(node->type_flags & TF_Complete_const)
-	    std::cout << "Complete_const ";
-	if(node->type_flags & TF_Defined)
-	    std::cout << "Defined ";
-	if(node->type_flags & TF_Underdefined)
-	    std::cout << "Underdefined ";
-	if(node->type_flags & TF_Extern)
-	    std::cout << "Extern ";
-	if(node->type_flags & TF_Exread)
-	    std::cout << "Exread ";
-	if(node->type_flags & TF_Exwrite)
-	    std::cout << "Exwrite ";
-	if(node->type_flags & TF_AoS)
-	    std::cout << "AoS ";
-	if(node->type_flags & TF_SoA)
-	    std::cout << "SoA ";
-	if(node->type_flags & TF_Pure_type)
-	    std::cout << "Pure_type ";
-	if(node->type_flags & TF_Has_placeholder)
-	    std::cout << "TF_Has_placeholder ";
-	if(node->type_flags & TF_Declaration)
-	    std::cout << "TF_Declaration ";
-	if(node->type_flags & TF_Reference)
-	    std::cout << "TF_Reference ";
+	for(uint32_t iflag = 0; iflag < log2i(uint32_t(TF_SIZE)); ++iflag) {
+	    if(check_type_flag(node, Type_flags(1 << iflag)))
+		std::cout << get_type_flag_name(Type_flags(1 << iflag)) << " ";
+	}
 	std::cout << HG_END_COLOR;
     }
 

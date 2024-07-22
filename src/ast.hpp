@@ -111,7 +111,30 @@ enum Type_flags : uint32_t {
     TF_Declaration     = 1 << 12, // the identifier is declared as an object at this exact point.
     TF_Reference       = 1 << 13, // the identifier is a reference to an object declaration.
     TF_Argument        = 1 << 14, // the object is an argument, it has the () brackets
+    TF_SIZE            = 1 << 15,
 };
+
+inline const char *type_flag_name_table[] = {
+    "Depends_on_all",
+    "Complete_const",
+    "Defined",
+    "Underdefined",
+    "Extern",
+    "Exread",
+    "Exwrite",
+    "AoS",
+    "SoA",
+    "Pure_type",
+    "Has_placeholder",
+    "Value",
+    "Declaration",
+    "Reference",
+    "Argument",
+};
+
+inline const char* get_type_flag_name(Type_flags type_flag) {
+    return type_flag_name_table[log2i(uint32_t(type_flag))];
+}
 
 struct Ast_node {
     Ast_node() : type_result(T_None), type_flags(TF_None), tkn{} {}
@@ -147,6 +170,11 @@ inline bool check_type_flag(const Ast_node *node, Type_flags type_flag)
 inline bool check_type_result_weak(const Ast_node *node, Type_enum type_result)
 {
     return node->type_result == type_result || (check_type_flag(node, TF_Has_placeholder) && node->type_result == T_None);
+}
+
+inline bool check_type_result_weak(const Ast_node *node, Type_enum type_result_a, Type_enum type_result_b)
+{
+    return node->type_result == type_result_a || type_result_b || (check_type_flag(node, TF_Has_placeholder) && node->type_result == T_None);
 }
 
 enum Print_ast_enum : uint64_t {
