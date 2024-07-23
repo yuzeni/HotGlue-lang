@@ -644,8 +644,8 @@ Ast_node *led_declare(LED_ARGS)
 	return nullptr;
     }
     
-    Type_compare tc = compare_types(node, right, parser);
-    if(tc == Type_compare::B_subset_A || tc == Type_compare::Equal) {
+    Type_compare tc = compare_types(node, right, parser, Type_compare(TC_B_subset_A | TC_Equal));
+    if(tc == TC_B_subset_A || tc == TC_Equal) {
 	if(node->sub)
 	    node_delete(node->sub);
 	add_single_sub(node, right);

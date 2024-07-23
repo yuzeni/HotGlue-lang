@@ -1,14 +1,14 @@
 
 type A: {
     a: u32
-    b: (c:_) {_} -> {c}
+    b: (c:_, x:u32) {_} -> {c, x}
 }
 
 type Numeric: {i8, i16, i32, i64, u8, u16, u32, u64, f8, f16, f32, f64}
 
 type B: {
     g: 54
-    l: (a:u32) {a *= 2} -> {a}
+    l: (y:u32, a:u32) {a *= 2} -> {a, y}
 }
 
 C: A: B

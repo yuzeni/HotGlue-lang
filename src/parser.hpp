@@ -45,6 +45,18 @@ public:
 	lexer.print_error_expression(left_right_nodes.first->tkn.ptr, size_t(left_right_nodes.second->tkn.ptr - left_right_nodes.first->tkn.ptr), HG_err::type, msg, args...);
 	++type_error_cnt;
     }
+
+    template<typename... Args>
+    void type_error(Ast_node* node_1, Ast_node* node_2, const char* msg, Args... args)
+    {
+	auto left_right_nodes_1 = get_left_and_right_most_nodes(node_1);
+	auto left_right_nodes_2 = get_left_and_right_most_nodes(node_2);
+	lexer.print_error_two_expressions(left_right_nodes_1.first->tkn.ptr, size_t(left_right_nodes_1.second->tkn.ptr - left_right_nodes_1.first->tkn.ptr),
+					  left_right_nodes_2.first->tkn.ptr, size_t(left_right_nodes_2.second->tkn.ptr - left_right_nodes_2.first->tkn.ptr),
+					  HG_err::type, msg, args...);
+	++type_error_cnt;
+    }
+
     
     int type_error_cnt = 0;
     Ast ast;

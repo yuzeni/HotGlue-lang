@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 
 #include "ast.hpp"
 #include "lexer.hpp"
@@ -139,14 +140,29 @@ constexpr bool is_base_type_integer(Type_enum type) { return type >= T_i8 && typ
 constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
 constexpr bool is_value_type(Ast_node *node) { return (is_base_type(node->type_result) && node->type_result != T_placeholder) || check_type_flag(node, TF_Reference); }
 
-enum class Type_compare {
-    Nothing,
-    Equal,
-    Intersecting,
-    Disjoint,
-    B_subset_A,
-    A_subset_B
+enum Type_compare : uint16_t {
+    TC_Nothing      = 0,
+    TC_Equal        = 1,
+    TC_Intersecting = 1 << 1,
+    TC_Disjoint     = 1 << 2,
+    TC_B_subset_A   = 1 << 3,
+    TC_A_subset_B   = 1 << 4,
+    TC_SIZE         = 1 << 5,
 };
 
+inline const char *type_compare_name_table[] {
+    "Nothing",
+    "Equal",
+    "Intersecting",
+    "Disjoint",
+    "B_subset_A",
+    "A_subset_B",
+};
+
+inline const char* get_type_compare_name(Type_compare tc) {
+    return type_compare_name_table[log2i(uint16_t(tc))];
+}
+
+
 class Parser;
-Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser& parser);
+Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser& parser, Type_compare expected_result);

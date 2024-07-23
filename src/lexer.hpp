@@ -188,6 +188,25 @@ public:
 	    src.info.c_str(), src_loca.line, src_loca.offset, args..., error_section.c_str());
 	++error_cnt;
     }
+
+    template<typename... Args>
+    void print_error_two_expressions(const char* from_p_1, size_t error_len_1, const char* from_p_2, size_t error_len_2, HG_err error_type, const char* msg, Args... args)
+    {
+	Source_location src_loca_1 = input.get_src_location(from_p_1);
+	Source_location src_loca_2 = input.get_src_location(from_p_2);
+	std::string error_section_1 = get_section_with_error(from_p_1, error_len_1, input.get_src_ref(from_p_1));
+	std::string error_section_2 = get_section_with_error(from_p_2, error_len_2, input.get_src_ref(from_p_2));
+	const Source& src_1 = input.get_src_ref(from_p_1);
+	const Source& src_2 = input.get_src_ref(from_p_2);
+	hg_error(error_type, cte_concat_c_str({HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n"
+		    "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n",
+		    "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n"}).c_str(),
+	    args...,
+	    src_1.info.c_str(), src_loca_1.line, src_loca_1.offset, error_section_1.c_str(),
+	    src_2.info.c_str(), src_loca_2.line, src_loca_2.offset, error_section_2.c_str());
+	++error_cnt;
+    }
+
     
     int parsing_error_cnt = 0;
     int error_cnt = 0;
