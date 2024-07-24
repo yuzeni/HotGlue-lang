@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "log_and_debug.hpp"
+#include "utils.hpp"
 
 static constexpr int n_future_tkns = 8;
 static constexpr int n_past_tkns = 8;
@@ -183,33 +184,34 @@ public:
 	Source_location src_loca = input.get_src_location(from_p);
 	std::string error_section = get_section_with_error(from_p, error_len, input.get_src_ref(from_p));
 	const Source& src = input.get_src_ref(from_p);
-	hg_error(error_type, cte_concat_c_str({"[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n"
+	err_handler.hg_error(error_type, cte_concat_c_str({"[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n"
 		    HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n%s"}).c_str(),
 	    src.info.c_str(), src_loca.line, src_loca.offset, args..., error_section.c_str());
 	++error_cnt;
     }
 
     template<typename... Args>
-    void print_error_two_expressions(const char* from_p_1, size_t error_len_1, const char* from_p_2, size_t error_len_2, HG_err error_type, const char* msg, Args... args)
+    void print_error_two_expressions(const char* from_p_A, size_t error_len_A, const char* from_p_B, size_t error_len_B, HG_err error_type, const char* msg, Args... args)
     {
-	Source_location src_loca_1 = input.get_src_location(from_p_1);
-	Source_location src_loca_2 = input.get_src_location(from_p_2);
-	std::string error_section_1 = get_section_with_error(from_p_1, error_len_1, input.get_src_ref(from_p_1));
-	std::string error_section_2 = get_section_with_error(from_p_2, error_len_2, input.get_src_ref(from_p_2));
-	const Source& src_1 = input.get_src_ref(from_p_1);
-	const Source& src_2 = input.get_src_ref(from_p_2);
-	hg_error(error_type, cte_concat_c_str({HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n"
-		    "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n",
-		    "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n"}).c_str(),
+	Source_location src_loca_A = input.get_src_location(from_p_A);
+	Source_location src_loca_B = input.get_src_location(from_p_B);
+	std::string error_section_A = get_section_with_error(from_p_A, error_len_A, input.get_src_ref(from_p_A));
+	std::string error_section_B = get_section_with_error(from_p_B, error_len_B, input.get_src_ref(from_p_B));
+	const Source& src_A = input.get_src_ref(from_p_A);
+	const Source& src_B = input.get_src_ref(from_p_B);
+	err_handler.hg_error(error_type, cte_concat_c_str({HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n"
+		    HG_BRIGHT_GREEN_COLOR "A: " HG_END_COLOR "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n",
+		    HG_BRIGHT_GREEN_COLOR "B: " HG_END_COLOR "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n"}).c_str(),
 	    args...,
-	    src_1.info.c_str(), src_loca_1.line, src_loca_1.offset, error_section_1.c_str(),
-	    src_2.info.c_str(), src_loca_2.line, src_loca_2.offset, error_section_2.c_str());
+	    src_A.info.c_str(), src_loca_A.line, src_loca_A.offset, error_section_A.c_str(),
+	    src_B.info.c_str(), src_loca_B.line, src_loca_B.offset, error_section_B.c_str());
 	++error_cnt;
     }
 
-    
     int parsing_error_cnt = 0;
     int error_cnt = 0;
+
+    Error_Handler err_handler;
 
 private:
 

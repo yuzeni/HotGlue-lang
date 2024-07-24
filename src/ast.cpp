@@ -139,7 +139,7 @@ Hash Ast::add_ident(Ast_node *ident_node, Ast_node *scope_super)
 	if(itr == identifier_set.end()) {
 	    identifier_set.insert({id, ident_node});
 	    ident_node->id = id;
-	    std::cout << "add_ident (id: " << id <<  "): " << ident_node->tkn.sv << '\n';
+	    // std::cout << "add_ident (id: " << id <<  "): " << ident_node->tkn.sv << '\n';
 	    return id;
 	}
 	++id;
@@ -147,7 +147,7 @@ Hash Ast::add_ident(Ast_node *ident_node, Ast_node *scope_super)
 	if(itr_cnt > 10000)
 	    HG_DEB_error("infinite loop");
     } while(itr->second->tkn.sv != ident_node->tkn.sv);
-    std::cout << "add_ident (id: 0): " << ident_node->tkn.sv << '\n';
+    // std::cout << "add_ident (id: 0): " << ident_node->tkn.sv << '\n';
     return 0;
 }
 

@@ -643,16 +643,20 @@ Ast_node *led_declare(LED_ARGS)
 	lexer.parsing_error(node->tkn, "Missing right argument for binary operator '%s'.", get_token_name_str(tkn_type).c_str());
 	return nullptr;
     }
-    
+
+    lexer.err_handler.start_error_group();
     Type_compare tc = compare_types(node, right, parser, Type_compare(TC_B_subset_A | TC_Equal));
     if(tc == TC_B_subset_A || tc == TC_Equal) {
+	lexer.err_handler.finish_error_group();
 	if(node->sub)
 	    node_delete(node->sub);
 	add_single_sub(node, right);
 	node->type_result = right->type_result;
     }
     else {
-	lexer.parsing_error(right->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration.");
+	lexer.parsing_error(right->tkn, "This type is not a subset of- or equivalnet to the type in the previous declaration of '%.*s'.",
+			    node->tkn.sv.length(), node->tkn.sv.data());
+	lexer.err_handler.finish_error_group();
 	node_delete(right);
     }
 

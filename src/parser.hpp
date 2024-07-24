@@ -56,16 +56,16 @@ public:
 					  HG_err::type, msg, args...);
 	++type_error_cnt;
     }
-
     
     int type_error_cnt = 0;
     Ast ast;
     bool early_exit = false;
     Scope_info scope_info;
+
+    Lexer lexer{}; // LF_PRINT_TOKENS
     
 private:
     std::pair<Ast_node*, Ast_node*> get_left_and_right_most_nodes(Ast_node* node) const;
-    Lexer lexer{}; // LF_PRINT_TOKENS
 };
 
 Ast_node *parse_expression(Lexer &lexer, Parser &parser, Ast_node *super, int rbp = 0);

@@ -160,9 +160,8 @@ inline const char *type_compare_name_table[] {
 };
 
 inline const char* get_type_compare_name(Type_compare tc) {
-    return type_compare_name_table[log2i(uint16_t(tc))];
+    return type_compare_name_table[log2i(uint16_t(tc)) + 1];
 }
-
 
 class Parser;
 Type_compare compare_types(Ast_node* node_a, Ast_node* node_b, Parser& parser, Type_compare expected_result);

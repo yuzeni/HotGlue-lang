@@ -83,28 +83,16 @@ static Type_compare type_compare_sum(Type_compare a, Type_compare b)
 static void type_compare_error(Type_compare result, Type_compare expected_result, Ast_node *node_a, Ast_node *node_b, Parser &parser)
 {
     if(!(uint16_t(result) & uint16_t(expected_result))) {
-	char expected_tcs[256];
-	int expected_tcs_sz = 0;
+	std::string expected_tcs;
 	for(uint16_t i = 0; i < log2i(uint16_t(TC_SIZE)); ++i) {
 	    if(uint16_t(expected_result) & (1 << i)) {
-		const char* tc_name = get_type_compare_name(Type_compare(i));
-		int new_sz = std::strlen(tc_name);
-		
-		for(int j = expected_tcs_sz; j < expected_tcs_sz + new_sz; ++j)
-		    expected_tcs[j] = tc_name[j - expected_tcs_sz];
-		
-		if(expected_tcs_sz > 0) {
-		    expected_tcs_sz += new_sz + 2;
-		    expected_tcs[expected_tcs_sz] = ',';
-		    expected_tcs[expected_tcs_sz + 1] = ' ';
-		}
-		else {
-		    expected_tcs_sz += new_sz;
-		}
+		expected_tcs += get_type_compare_name(Type_compare(1 << i));;
+		expected_tcs += ',';
+		expected_tcs += ' ';
 	    }
 	}
-	expected_tcs[expected_tcs_sz - 1] = '\0';
-	parser.type_error(node_a, node_b, "Expected type comparison(s) '%s', but got '%s'", expected_tcs, get_type_compare_name(result));
+	expected_tcs.erase(expected_tcs.end() - 2, expected_tcs.end());
+	parser.type_error(node_a, node_b, "Expected type comparison result(s) '%s', but got '%s'", expected_tcs.c_str(), get_type_compare_name(result));
     }
 }
 
@@ -139,18 +127,18 @@ static Type_compare compare_data_objects(Ast_node *node_a, Ast_node *node_b, Par
     node_a = dereference_node(node_a, parser);
     node_b = dereference_node(node_b, parser);
 
-    node_a = node_a->sub ? node_a->sub : node_a;
-    node_b = node_b->sub ? node_b->sub : node_b;
+    Ast_node* sub_a = node_a->sub ? node_a->sub : node_a;
+    Ast_node* sub_b = node_b->sub ? node_b->sub : node_b;
 
     Type_compare tc = TC_Nothing;
     
-    while(node_a && node_b) {
-	tc = type_compare_sum(compare_types(node_a, node_b, parser, expected_result), tc);
-	node_a = dereference_node(node_a->alt_sub, parser);
-	node_b = dereference_node(node_b->alt_sub, parser);
+    while(sub_a && sub_b) {
+	tc = type_compare_sum(compare_types(sub_a, sub_b, parser, expected_result), tc);
+	sub_a = dereference_node(sub_a->alt_sub, parser);
+	sub_b = dereference_node(sub_b->alt_sub, parser);
     }
     
-    if(bool(node_a) ^ bool(node_b))
+    if(bool(sub_a) ^ bool(sub_b))
 	tc = TC_Disjoint;
 
     type_compare_error(tc, expected_result, node_a, node_b, parser);
@@ -227,7 +215,10 @@ static Type_compare compare_function_returns(Ast_node *return_a, Ast_node *retur
     goto exit;
 
 exit:
+    parser.lexer.err_handler.start_error_group();
+    parser.type_error(return_a, "This is some  error linked to the function return type error.");
     type_compare_error(tc, expected_result, return_a, return_b, parser);
+    parser.lexer.err_handler.finish_error_group();
     return tc;
 }
 
@@ -247,26 +238,32 @@ static Type_compare compare_function_objects(Ast_node *node_a, Ast_node *node_b,
 
 Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser, Type_compare expected_result)
 {
+    // parser.lexer.err_handler.start_error_group();
+    
     node_a = dereference_node(node_a, parser);
     node_b = dereference_node(node_b, parser);
     
     HG_DEB_assert(node_a && node_b, "");
     HG_DEB_assert(!check_type_flag(node_a, TF_Reference) && !check_type_flag(node_b, TF_Reference), "");
 
+    Type_compare tc;
+
     if((node_a->type_result == T_Data_Object)
 	&& (node_b->type_result == T_Data_Object))
     {
-	return compare_data_objects(node_a, node_b, parser, expected_result);
+        tc = compare_data_objects(node_a, node_b, parser, expected_result);
     }
     else if((node_a->type_result == T_Function_Object)
 	    && (node_b->type_result == T_Function_Object))
     {
-	return compare_function_objects(node_a, node_b, parser, expected_result);
+        tc = compare_function_objects(node_a, node_b, parser, expected_result);
     }
     else if(is_base_type(node_a->type_result) && is_base_type(node_b->type_result)) {
-	return compare_base_types(node_a, node_b, parser, expected_result);
+        tc = compare_base_types(node_a, node_b, parser, expected_result);
     }
     else {
-	return TC_Disjoint;
+        tc = TC_Disjoint;
     }
+    // parser.lexer.err_handler.finish_error_group();
+    return tc;
 }

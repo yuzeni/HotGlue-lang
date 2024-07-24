@@ -115,6 +115,7 @@ enum Type_flags : uint32_t {
 };
 
 inline const char *type_flag_name_table[] = {
+    "None",
     "Depends_on_all",
     "Complete_const",
     "Defined",
@@ -133,7 +134,7 @@ inline const char *type_flag_name_table[] = {
 };
 
 inline const char* get_type_flag_name(Type_flags type_flag) {
-    return type_flag_name_table[log2i(uint32_t(type_flag))];
+    return type_flag_name_table[log2i(uint32_t(type_flag)) + 1];
 }
 
 struct Ast_node {

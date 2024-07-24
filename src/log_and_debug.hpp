@@ -1,8 +1,9 @@
 #pragma once
 
 #include <iostream>
-
-#include "utils.hpp"
+#include <ostream>
+#include <vector>
+#include <utility>
 
 #if HG_ENABLE_LOG_COLORS
 #  define HG_BLACK_COLOR           "\033[30m"
@@ -115,25 +116,94 @@ namespace HG_errors {
     enum class Log_type { INFO, WARNING, ERROR };
     
     template<typename... Args>
-    void log(Log_type log_type, const char* msg, Args... args)
+    void log(std::ostream& output_stream, Log_type log_type, const char* msg, Args... args)
     {
 	char* log_msg = new char[max_err_msg_size];
 	std::snprintf(log_msg, max_err_msg_size, msg, args...);
  	switch(log_type){
-	case Log_type::INFO:    std::cout << HG_INFO_COLOR    "INFO    "; break;
-	case Log_type::WARNING: std::cout << HG_WARNING_COLOR "WARNING "; break;
-	case Log_type::ERROR:   std::cout << HG_ERROR_COLOR   "ERROR   "; break;
+	case Log_type::INFO:    output_stream << HG_INFO_COLOR    "INFO    "; break;
+	case Log_type::WARNING: output_stream << HG_WARNING_COLOR "WARNING "; break;
+	case Log_type::ERROR:   output_stream << HG_ERROR_COLOR   "ERROR   "; break;
 	}
-	std::cout << HG_END_COLOR << log_msg << '\n';
+	output_stream << HG_END_COLOR << log_msg << '\n';
     }
-}
+} // namespace HG_errors
+
+class Error_Handler {
+public:
+    template <typename... Args>
+    void hg_error(HG_err err_type, const char *msg, Args... args) {
+	using namespace HG_errors;
+#if HG_LOG_ERRORS
+	char* log_msg = new char[max_err_msg_size];
+	size_t true_size = std::snprintf(log_msg, max_err_msg_size, HG_ERROR_COLOR "%s error:" HG_END_COLOR " %s", err_type_to_str(err_type), msg);
+
+	char* final_msg = new char[max_err_msg_size];
+	std::snprintf(final_msg, max_err_msg_size, msg, args...);
+	
+	if(depth)
+	    err_msgs.push_back({depth, HG_ERROR_COLOR   "ERROR   " HG_END_COLOR + std::string(final_msg) + '\n'});
+	else
+	    std::cout << HG_ERROR_COLOR   "ERROR   " HG_END_COLOR << final_msg  << '\n';
+
+	if(true_size >= max_err_msg_size)
+	    this->hg_error(HG_err::out_of_range, "Previous error message was too long and did not fit in the buffer of size %d", max_err_msg_size);
+#endif
+    }
+
+    void start_error_group() { ++depth; }
+    
+    void finish_error_group()
+    {
+	std::string group;
+	bool is_head = true;
+	
+	while(!err_msgs.empty() && err_msgs.back().first == depth) {
+	    std::string& msg = err_msgs.back().second;
+	    
+	    if(depth >= 1 && (!is_head))
+		msg.insert(0, HG_ERROR_COLOR "|-- " HG_END_COLOR);
+	    is_head = false;
+
+	    // add "|    " when the current message is not the last in the group and "    " otherwise
+	    std::string left_add = "    ";
+	    if (err_msgs.size() >= 2 && err_msgs[err_msgs.size() - 2].first == depth)
+		left_add = HG_ERROR_COLOR "|   " HG_END_COLOR;
+
+	    for (size_t i = 0, prev_line_break = 0; i < msg.size(); ++i) {
+		if(msg[i] == '\n') {
+		    if(prev_line_break != 0) {
+			msg.insert(prev_line_break + 1, left_add);
+			i += left_add.size();
+		    }
+		    prev_line_break = i;
+		}
+	    }
+	    
+	    if(depth == 1)
+		std::cout << msg;
+	    else
+		group += msg;
+	    
+	    err_msgs.pop_back();
+	}
+	--depth;
+
+	if(!group.empty())
+	    err_msgs.push_back({depth, group});
+    }
+
+private:
+    int depth = 0;
+    std::vector<std::pair<int, std::string>> err_msgs;
+};
 
 template <typename... Args>
 void hg_info(const char *msg, Args... args)
 {
 #if HG_LOG_INFO
     using namespace HG_errors;
-    log(Log_type::INFO, msg, args...);
+    log(std::cout,Log_type::INFO, msg, args...);
 #endif
 }
 
@@ -142,7 +212,7 @@ void hg_warn(const char *msg, Args... args)
 {
 #if HG_LOG_WARNINGS
     using namespace HG_errors;
-    log(Log_type::WARNING, msg, args...);
+    log(std::cout, Log_type::WARNING, msg, args...);
 #endif
 }
 
@@ -153,7 +223,7 @@ void hg_error(HG_err err_type, const char *msg, Args... args)
 #if HG_LOG_ERRORS
     char* log_msg = new char[max_err_msg_size];
     size_t true_size = std::snprintf(log_msg, max_err_msg_size, HG_ERROR_COLOR "%s error:" HG_END_COLOR " %s", err_type_to_str(err_type), msg);
-    log(Log_type::ERROR, log_msg, args...);
+    log(std::cout, Log_type::ERROR, log_msg, args...);
     if(true_size >= max_err_msg_size)
 	hg_error(HG_err::out_of_range, "Previous error message was too long and did not fit in the buffer of size %d", max_err_msg_size);
 #endif
