@@ -138,7 +138,10 @@ constexpr bool is_declare_signifier_tkn(Token_enum tkn) { return tkn == '|' || t
 constexpr bool is_base_type(Type_enum type) { return type >= T_i8 && type <= T_placeholder; }
 constexpr bool is_base_type_integer(Type_enum type) { return type >= T_i8 && type <= T_u64; }
 constexpr bool is_base_type_floating_point(Type_enum type) { return type >= T_f8 && type <= T_f64; }
-constexpr bool is_value_type(Ast_node *node) { return (is_base_type(node->type_result) && node->type_result != T_placeholder) || check_type_flag(node, TF_Reference); }
+constexpr bool is_value_type(Ast_node *node)
+{
+    return (!check_type_flag(node, TF_Declaration) && (is_base_type(node->type_result) && node->type_result != T_placeholder)) || check_type_flag(node, TF_Reference);
+}
 
 enum Type_compare : uint16_t {
     TC_Nothing      = 0,

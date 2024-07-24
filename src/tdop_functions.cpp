@@ -1,3 +1,4 @@
+
 // TODO-LIST:
 // - pass on type-flags to supers when adding subs
 
@@ -105,6 +106,13 @@ Ast_node *nud_ident(NUD_ARGS)
 	    // carry over type information
 	    add_type_flag(node, TF_Reference);
 	    node->type_result = parser.ast.identifier_set.at(node->id)->type_result;
+	    
+	    Ast_node* ref_obj = parser.ast.find_object_with_id(node->id);
+	    // if the refered object has no sub, then we must be in its sub right now, aka circle referencing.
+	    if (!ref_obj->sub) {
+		parser.type_error(ref_obj, node, "An object 'A' can't contain itself 'B'.");
+		return nullptr;
+	    }
 	}
     }
     return node;
@@ -382,8 +390,10 @@ Ast_node *nud_brace(NUD_ARGS)
 	else if (has_declaration)
 	    node->type_result = T_Data_Object;
 
-	if(has_declaration + has_mutation + has_expression > 1)
-	    parser.type_error(node, "An object cannot contain declarations mutations or expressions at the same time.");
+	if(has_declaration && has_mutation)
+	    parser.type_error(node, "An object cannot contain declarations and mutations at the same time.");
+	if(has_expression && has_mutation)
+	    parser.type_error(node, "An object cannot contain expressions and mutations at the same time.");
 
 	if(has_placeholder)
 	    add_type_flag(node, TF_Has_placeholder);
@@ -631,8 +641,14 @@ Ast_node *led_declare(LED_ARGS)
 	    get_and_add_right_unary(tkn_type, node, lexer, parser);
 	}
 	parser.scope_info.restore_scope(enclosing_scope);
-	
-        node->type_result = node->sub->type_result;
+
+	if(node->sub->tkn.type == tkn_ident && node->sub->id == 0)
+	    lexer.parsing_error(node->sub->tkn, "This object does not exist in the scope.");
+
+	if (node->sub)
+	    node->type_result = node->sub->type_result;
+	else
+	    node->type_result = T_None;
         add_type_flag(node, TF_Declaration); 
 
 	return node;

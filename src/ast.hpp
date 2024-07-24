@@ -163,17 +163,17 @@ inline void add_type_flag(Ast_node *node, Type_flags type_flag)
 	node->type_flags = Type_flags(node->type_flags | type_flag);
 }
 
-inline bool check_type_flag(const Ast_node *node, Type_flags type_flag)
+constexpr bool check_type_flag(const Ast_node *node, Type_flags type_flag)
 {
     return node->type_flags & type_flag;
 }
 
-inline bool check_type_result_weak(const Ast_node *node, Type_enum type_result)
+constexpr bool check_type_result_weak(const Ast_node *node, Type_enum type_result)
 {
     return node->type_result == type_result || (check_type_flag(node, TF_Has_placeholder) && node->type_result == T_None);
 }
 
-inline bool check_type_result_weak(const Ast_node *node, Type_enum type_result_a, Type_enum type_result_b)
+constexpr bool check_type_result_weak(const Ast_node *node, Type_enum type_result_a, Type_enum type_result_b)
 {
     return node->type_result == type_result_a || type_result_b || (check_type_flag(node, TF_Has_placeholder) && node->type_result == T_None);
 }

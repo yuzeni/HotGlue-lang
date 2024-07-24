@@ -184,9 +184,10 @@ public:
 	Source_location src_loca = input.get_src_location(from_p);
 	std::string error_section = get_section_with_error(from_p, error_len, input.get_src_ref(from_p));
 	const Source& src = input.get_src_ref(from_p);
-	err_handler.hg_error(error_type, cte_concat_c_str({"[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n"
-		    HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n%s"}).c_str(),
-	    src.info.c_str(), src_loca.line, src_loca.offset, args..., error_section.c_str());
+	err_handler.hg_error(error_type, cte_concat_c_str({HG_BRIGHT_YELLOW_COLOR, msg, HG_END_COLOR "\n"
+		    "[%s:" HG_BRIGHT_RED_COLOR "%d" HG_END_COLOR ":" HG_BRIGHT_BLUE_COLOR "%d" HG_END_COLOR "]\n%s\n"}).c_str(),
+	    args...,
+	    src.info.c_str(), src_loca.line, src_loca.offset, error_section.c_str());
 	++error_cnt;
     }
 

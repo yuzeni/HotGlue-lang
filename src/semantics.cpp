@@ -1,5 +1,6 @@
 #include "semantics.hpp"
 #include <cstdint>
+#include <utility>
 
 #include "ast.hpp"
 #include "log_and_debug.hpp"
@@ -78,6 +79,7 @@ static Type_compare type_compare_sum(Type_compare a, Type_compare b)
 	    return TC_Intersecting;
 	return TC_Disjoint;
     }
+    return TC_Disjoint;
 }
 
 static void type_compare_error(Type_compare result, Type_compare expected_result, Ast_node *node_a, Ast_node *node_b, Parser &parser)
@@ -122,10 +124,34 @@ static Ast_node *dereference_node(Ast_node* node, Parser& parser)
     return node;
 }
 
+static std::pair<Ast_node*, Ast_node*> dereference_if_id_neq(Ast_node* node_a, Ast_node* node_b, Parser& parser)
+{
+    if(node_a && node_b ) {
+	
+	Ast_node* prev_node_a = node_a;
+	while (node_a->sub && !node_a->sub->alt_sub && !(check_type_flag(node_a, TF_Reference) && check_type_flag(node_b, TF_Reference) && node_a->id == node_b->id)) {
+	    node_a = node_a->sub;
+	}
+	while (node_b->sub && !node_b->sub->alt_sub && !(check_type_flag(node_b, TF_Reference) && check_type_flag(prev_node_a, TF_Reference) && node_b->id == prev_node_a->id)) {
+	    node_b = node_b->sub;
+	}
+	
+	prev_node_a = node_a;
+	if (check_type_flag(node_a, TF_Reference) && !(check_type_flag(node_a, TF_Reference) && check_type_flag(node_b, TF_Reference) && node_a->id == node_b->id)) {
+	    node_a = parser.ast.find_object_with_id(node_a->id);
+	}
+	if (check_type_flag(node_b, TF_Reference) && !(check_type_flag(node_b, TF_Reference) && check_type_flag(prev_node_a, TF_Reference) && node_b->id == prev_node_a->id)) {
+	    node_b = parser.ast.find_object_with_id(node_b->id);
+	}
+    }
+    return { node_a, node_b };
+}
+
 static Type_compare compare_data_objects(Ast_node *node_a, Ast_node *node_b, Parser& parser, Type_compare expected_result)
 {
-    node_a = dereference_node(node_a, parser);
-    node_b = dereference_node(node_b, parser);
+    auto deref = dereference_if_id_neq(node_a, node_b, parser);
+    node_a = deref.first;
+    node_b = deref.second;
 
     Ast_node* sub_a = node_a->sub ? node_a->sub : node_a;
     Ast_node* sub_b = node_b->sub ? node_b->sub : node_b;
@@ -134,8 +160,9 @@ static Type_compare compare_data_objects(Ast_node *node_a, Ast_node *node_b, Par
     
     while(sub_a && sub_b) {
 	tc = type_compare_sum(compare_types(sub_a, sub_b, parser, expected_result), tc);
-	sub_a = dereference_node(sub_a->alt_sub, parser);
-	sub_b = dereference_node(sub_b->alt_sub, parser);
+	// auto deref = dereference_if_id_neq(sub_a->alt_sub, sub_b->alt_sub, parser);
+	sub_a = sub_a->alt_sub;
+	sub_b = sub_b->alt_sub;
     }
     
     if(bool(sub_a) ^ bool(sub_b))
@@ -215,17 +242,18 @@ static Type_compare compare_function_returns(Ast_node *return_a, Ast_node *retur
     goto exit;
 
 exit:
-    parser.lexer.err_handler.start_error_group();
-    parser.type_error(return_a, "This is some  error linked to the function return type error.");
     type_compare_error(tc, expected_result, return_a, return_b, parser);
-    parser.lexer.err_handler.finish_error_group();
     return tc;
 }
 
 static Type_compare compare_function_objects(Ast_node *node_a, Ast_node *node_b, Parser& parser, Type_compare expected_result)
 {
-    node_a = dereference_node(node_a, parser);
-    node_b = dereference_node(node_b, parser);
+    auto deref = dereference_if_id_neq(node_a, node_b, parser);
+    node_a = deref.first;
+    node_b = deref.second;
+    
+    // node_a = dereference_node(node_a, parser);
+    // node_b = dereference_node(node_b, parser);
     
     HG_DEB_assert(node_a->sub && node_b->sub, "must have subs");
     Type_compare arg_tc = compare_data_objects(node_a->sub, node_b->sub, parser, expected_result);
@@ -238,32 +266,31 @@ static Type_compare compare_function_objects(Ast_node *node_a, Ast_node *node_b,
 
 Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser, Type_compare expected_result)
 {
-    // parser.lexer.err_handler.start_error_group();
+    auto deref = dereference_if_id_neq(node_a, node_b, parser);
+    node_a = deref.first;
+    node_b = deref.second;
     
-    node_a = dereference_node(node_a, parser);
-    node_b = dereference_node(node_b, parser);
+    // node_a = dereference_node(node_a, parser);
+    // node_b = dereference_node(node_b, parser);
     
     HG_DEB_assert(node_a && node_b, "");
-    HG_DEB_assert(!check_type_flag(node_a, TF_Reference) && !check_type_flag(node_b, TF_Reference), "");
+    // HG_DEB_assert(!check_type_flag(node_a, TF_Reference) && !check_type_flag(node_b, TF_Reference), "");
 
-    Type_compare tc;
-
+    if(check_type_flag(node_a, TF_Reference) && check_type_flag(node_b, TF_Reference) && node_a->id == node_b->id) {
+	return TC_Equal;
+    }
     if((node_a->type_result == T_Data_Object)
 	&& (node_b->type_result == T_Data_Object))
     {
-        tc = compare_data_objects(node_a, node_b, parser, expected_result);
+        return compare_data_objects(node_a, node_b, parser, expected_result);
     }
-    else if((node_a->type_result == T_Function_Object)
+    if((node_a->type_result == T_Function_Object)
 	    && (node_b->type_result == T_Function_Object))
     {
-        tc = compare_function_objects(node_a, node_b, parser, expected_result);
+        return compare_function_objects(node_a, node_b, parser, expected_result);
     }
-    else if(is_base_type(node_a->type_result) && is_base_type(node_b->type_result)) {
-        tc = compare_base_types(node_a, node_b, parser, expected_result);
+    if(is_base_type(node_a->type_result) && is_base_type(node_b->type_result)) {
+        return compare_base_types(node_a, node_b, parser, expected_result);
     }
-    else {
-        tc = TC_Disjoint;
-    }
-    // parser.lexer.err_handler.finish_error_group();
-    return tc;
+    return TC_Disjoint;
 }
