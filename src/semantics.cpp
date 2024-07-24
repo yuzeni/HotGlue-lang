@@ -98,7 +98,7 @@ static void type_compare_error(Type_compare result, Type_compare expected_result
     }
 }
 
-static Type_compare compare_base_types(Ast_node* node_a, Ast_node* node_b, Parser& parser, Type_compare expected_result)
+static Type_compare compare_base_types_and_values(Ast_node* node_a, Ast_node* node_b, Parser& parser, Type_compare expected_result)
 {
     HG_DEB_assert(is_base_type(node_a->type_result) && is_base_type(node_b->type_result), "must be base types");
     Type_compare tc;
@@ -106,6 +106,25 @@ static Type_compare compare_base_types(Ast_node* node_a, Ast_node* node_b, Parse
 	tc = TC_Equal;
     else
 	tc = Base_type_compare_table[TC_BASE_TYPES_TABLE_IDX(node_a->type_result, node_b->type_result)];
+
+    if (check_type_flag(node_a, TF_Value) && check_type_flag(node_b, TF_Value)) {
+	if (node_a->tkn.i == node_b->tkn.i)
+	    tc = TC_Equal;
+	else
+	    tc = TC_Disjoint;
+    }
+    else if (check_type_flag(node_a, TF_Value)) {
+	if (tc == TC_Equal)
+	    tc = TC_A_subset_B;
+	else if (tc == TC_B_subset_A)
+	    tc = TC_Disjoint;
+    }
+    else if (check_type_flag(node_b, TF_Value)) {
+	if (tc == TC_Equal)
+	    tc = TC_B_subset_A;
+	else if (tc == TC_A_subset_B)
+	    tc = TC_Disjoint;
+    }
     
     type_compare_error(tc, expected_result, node_a, node_b, parser);
     return tc;
@@ -290,7 +309,7 @@ Type_compare compare_types(Ast_node *node_a, Ast_node *node_b, Parser& parser, T
         return compare_function_objects(node_a, node_b, parser, expected_result);
     }
     if(is_base_type(node_a->type_result) && is_base_type(node_b->type_result)) {
-        return compare_base_types(node_a, node_b, parser, expected_result);
+        return compare_base_types_and_values(node_a, node_b, parser, expected_result);
     }
     return TC_Disjoint;
 }
